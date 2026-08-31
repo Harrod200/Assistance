@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Strings>
+  <!-- Mission Template -->
+  <String name="TIMissionTemplate_Assist.friendlyName">Assist Councilor</String>
+  <String name="TIMissionTemplate_Assist.description">Grant a percentage of your stats to help another councilor. The bonus is temporary and will disappear when they complete their next mission.</String>
+
+  <!-- Mission Effects -->
+  <String name="TIMissionEffect_Assist.effectName">Assist Bonus</String>
+
+  <!-- Modifiers -->
+  <String name="TIMissionModifier_AssistStat.displayName">Persuasion Boost</String>
+  <String name="TIMissionModifier_AssistFlat.displayName">Assist Modifier</String>
+
+  <!-- Localization keys for game engine -->
+  <String name="Assist">Assist</String>
+  <String name="AssistCouncilor">Assist Councilor</String>
+  <String name="CouncilorAttribute.Persuasion">Persuasion</String>
+  <String name="CouncilorAttribute.Investigation">Investigation</String>
+  <String name="CouncilorAttribute.Espionage">Espionage</String>
+  <String name="CouncilorAttribute.Command">Command</String>
+  <String name="CouncilorAttribute.Administration">Administration</String>
+  <String name="CouncilorAttribute.Science">Science</String>
+  <String name="CouncilorAttribute.Security">Security</String>
+</Strings>
