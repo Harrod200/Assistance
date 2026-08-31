@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.3.0  
-**Last Updated:** 2026-09-01  
+**Version:** 0.3.1  
+**Last Updated:** 2026-09-02  
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+  
@@ -27,7 +27,8 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.3.0 | 2026-09-01 | **CURRENT** - Fixed target validation to match Inspire mission exactly. Removed CouncilorOnEarth condition and TargetHasNoMission custom condition. Assist now targets any friendly councilor regardless of mission status. |
+| 0.3.1 | 2026-09-02 | **CURRENT** - Fixed critical AI mission planner KeyNotFoundException crash. Restructured mission template to exactly match vanilla Inspire mission structure. Added TIMissionModifier_ResourceSpent, defensive modifiers, proper Context lists, and all required conditions (Human, FreeCouncilor). Enhanced modifier inheritance and bootstrap logging. |
+| 0.3.0 | 2026-09-01 | Fixed target validation to match Inspire mission exactly. Removed CouncilorOnEarth condition and TargetHasNoMission custom condition. Assist now targets any friendly councilor regardless of mission status. |
 | 0.2.0 | 2026-08-31 | Fixed UI crash by switching from TIMissionResolution_Automatic to TIMissionResolution_Contested with proper modifiers. Added custom TIMissionModifier_AssistStat modifier. |
 | 0.1.0 | 2026-08-30 | Initial working version. Implemented core assist mission, stat transfer logic, bonus tracking with auto-removal, and English localization. |
 
@@ -39,7 +40,7 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 Assistance/
 ├── TIMissionTemplate_Assist.cs              [Mission definition - CORE FILE]
 ├── TIMissionEffect_Assist.cs                [Stat transfer logic during mission completion]
-├── TIMissionModifier_AssistStat.cs          [Contested resolution modifier for UI rendering]
+├── TIMissionModifier_AssistStat.cs          [Mission resolution modifier for contested resolution]
 ├── TIMissionModifier_AssistFlat.cs          [Placeholder flat modifier]
 ├── AssistBonusTracker.cs                    [Tracks and removes bonuses after mission complete]
 ├── TICouncilorState_CompleteMissionPatch.cs [Harmony patch to trigger bonus removal]
@@ -48,7 +49,7 @@ Assistance/
 ├── Settings.cs                              [Configuration storage]
 ├── AssistMissionBootstrapPatch.cs           [Harmony bootstrap patch for mission registration]
 ├── English.xml                              [Localization strings]
-├── Properties/AssemblyInfo.cs               [Assembly version: 0.3.0]
+├── Properties/AssemblyInfo.cs               [Assembly version: 0.3.1]
 └── bin/Debug/Assistance.dll                 [Compiled mod, ~11 KB]
 ```
 
@@ -56,27 +57,44 @@ Assistance/
 
 ## 🔑 Critical Implementation Details
 
-### Mission Targeting (Matches Inspire Mission)
+### Vanilla Mission Template Reference
 
-The Assist mission targets are validated using **only 2 conditions:**
+The Assist mission template is built to match the vanilla **Inspire** mission exactly. Vanilla mission templates are stored in:
+- **Game Location:** `C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\StreamingAssets\Templates\TIMissionTemplate.json`
+
+This JSON file contains all vanilla mission definitions. Compare your Assist mission against the Inspire mission in this file to verify compatibility.
+
+### Mission Targeting (Matches Inspire Mission Exactly)
+
+The Assist mission uses **all 4 of Inspire's conditions:**
 
 ```csharp
 this.conditions = new List<TIMissionCondition>
 {
-	new TIMissionCondition_TargetInRange(),      // Target must be in range
+	new TIMissionCondition_TargetInRange(),      // Target must be in communication range
+	new TIMissionCondition_Human(),              // Target must be human (not alien/proxy)
 	new TIMissionCondition_MyFactionCouncilor()  // Target must be same faction, not self
+	new TIMissionCondition_FreeCouncilor()       // Target must not be detained
 };
 ```
 
-**IMPORTANT:** There is NO "TargetHasNoMission" restriction. The Assist mission can target councilors who are actively on other missions. This matches the vanilla Inspire mission behavior.
+**IMPORTANT:** The Assist mission can target councilors who are actively on other missions (similar to Inspire). The `FreeCouncilor` condition only checks if the councilor is detained, not whether they have an active mission.
 
-### Resolution Method
+### Resolution Method (Critical for AI Planner)
 
-Uses `TIMissionResolution_Contested` (NOT Automatic) with:
-- **Attacking Modifiers:** `TIMissionModifier_AssistStat()`
-- **Defending Modifiers:** Empty list
+Uses `TIMissionResolution_Contested` with:
+- **Attacking Modifiers:**
+  1. `TIMissionModifier_CouncilorAttackStat` (Persuasion) - REQUIRED for AI planner primaryAttackerStat property
+  2. `TIMissionModifier_ResourceSpent()` - Standard cost modifier
+- **Defending Modifiers:**
+  1. `TIMissionModifier_FlatModifier` (value: 0) - Prevents null issues
 
-This is required because the game's `TIMissionTemplate.get_primaryAttackerStat()` property iterates through `resolutionMethod.attackingModifiers` during UI rendering. Without this, the game crashes with NullReferenceException.
+**Critical Note:** The AI mission planner (`AICouncilorMissionPlanner.PlanMissionsTask`) iterates through mission properties including:
+- `mission.primaryAttackerStat` - looks for `TIMissionModifier_CouncilorAttackStat` type
+- `mission.attackerContexts` - MUST NOT be empty (use `{Context.None}`)
+- `mission.defenderContexts` - MUST NOT be empty (use `{Context.None}`)
+
+If these aren't properly initialized, the game crashes with `KeyNotFoundException`.
 
 ### Bonus Application & Removal
 
@@ -93,13 +111,16 @@ This is required because the game's `TIMissionTemplate.get_primaryAttackerStat()
 
 ---
 
-## 🐛 Known Issues & Solutions
+## 🐛 Fixed Issues (v0.3.1)
 
 | Issue | Root Cause | Solution |
 |-------|-----------|----------|
-| AI mission planner crashes | Having CouncilorOnEarth condition + TargetHasNoMission caused dictionary access errors in AICouncilorMissionPlanner.PlanMissionsTask | Removed both conditions, kept only TargetInRange + MyFactionCouncilor |
-| UI crash on mission hover | TIMissionResolution_Automatic doesn't expose `attackingModifiers` property | Changed to TIMissionResolution_Contested with proper modifier list |
-| Bonuses were permanent | No removal mechanism | Implemented AssistBonusTracker + SetCompletedMission patch |
+| AI mission planner crash (KeyNotFoundException) | Mission template properties didn't match vanilla Inspire structure. Empty Context lists caused dictionary lookup errors. | Restructured template to match Inspire exactly: added ResourceSpent modifier, defensive modifier, proper Context lists, all 4 conditions |
+| Missing attacking modifier type | AI planner specifically looks for TIMissionModifier_CouncilorAttackStat in attackingModifiers | Changed from custom TIMissionModifier_AssistStat only to include TIMissionModifier_CouncilorAttackStat(Persuasion) + ResourceSpent |
+| Empty Context lists | AI planner tries to access context-based modifiers for each context in the lists | Changed from empty lists to {Context.None} |
+| Missing defensive modifier | Game doesn't handle null defending modifiers well | Added TIMissionModifier_FlatModifier(0) to defendingModifiers |
+| Missing conditions | Vanilla missions have complete condition sets | Added TIMissionCondition_Human() and TIMissionCondition_FreeCouncilor() to match Inspire |
+| Incorrect cost type | Used TIMissionCost_Flat instead of vanilla pattern | Changed to TIMissionCost_Bonus(FactionResource.None) |
 
 ---
 
@@ -146,7 +167,7 @@ AssistBonusTracker.RemoveExpiredBonuses(completedCouncilor);
 ## ⚠️ Critical Decisions & Tradeoffs
 
 ### 1. Free Mission (vs. Cost)
-- **Decision:** No IP/Influence cost
+- **Decision:** No IP/Influence cost (TIMissionCost_Bonus with FactionResource.None)
 - **Rationale:** Assist is a support mission; adding cost would limit usefulness
 - **Tradeoff:** Potentially overpowered if assist % is too high
 
@@ -160,10 +181,10 @@ AssistBonusTracker.RemoveExpiredBonuses(completedCouncilor);
 - **Rationale:** Prevents permanent stat inflation
 - **Tradeoff:** Bonuses only last 1-3 days depending on mission duration
 
-### 4. Contested Resolution (vs. Automatic)
-- **Decision:** Use Contested so game engine can render UI properly
-- **Rationale:** Game requires `attackingModifiers` list for UI (non-negotiable)
-- **Tradeoff:** Technically supports failures (though rare due to high Persuasion)
+### 4. Contested Resolution with CouncilorAttackStat
+- **Decision:** Use Contested resolution with TIMissionModifier_CouncilorAttackStat(Persuasion)
+- **Rationale:** AI planner requires specific modifier type; Persuasion matches support mission theme
+- **Tradeoff:** Modifier displays as Persuasion in UI (cosmetic)
 
 ---
 
