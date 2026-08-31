@@ -6,11 +6,16 @@ namespace Assistance
 {
     /// <summary>
     /// Tracks assist bonuses granted to councilors so they can be removed when missions complete.
+    /// Also tracks total bonus amounts for control point cap exclusion calculation.
     /// </summary>
     public static class AssistBonusTracker
     {
         private static Dictionary<TICouncilorState, Dictionary<CouncilorAttribute, int>> trackedBonuses = 
             new Dictionary<TICouncilorState, Dictionary<CouncilorAttribute, int>>();
+
+        // Track total assist bonus amount per councilor for control point cap calculation
+        private static Dictionary<TICouncilorState, int> totalBonusAmounts = 
+            new Dictionary<TICouncilorState, int>();
 
         /// <summary>
         /// Records an assist bonus for a councilor
@@ -31,6 +36,24 @@ namespace Assistance
             }
 
             trackedBonuses[councilor][stat] += amount;
+
+            // Track total bonus amount for control point cap calculation
+            if (!totalBonusAmounts.ContainsKey(councilor))
+            {
+                totalBonusAmounts[councilor] = 0;
+            }
+            totalBonusAmounts[councilor] += amount;
+        }
+
+        /// <summary>
+        /// Gets the total assist bonus amount for a councilor (used for control point cap exclusion)
+        /// </summary>
+        public static int GetCouncilorBonusAmount(TICouncilorState councilor)
+        {
+            if (councilor == null || !totalBonusAmounts.ContainsKey(councilor))
+                return 0;
+
+            return totalBonusAmounts[councilor];
         }
 
         /// <summary>
@@ -53,6 +76,12 @@ namespace Assistance
 
                 trackedBonuses.Remove(councilor);
             }
+
+            // Clear total bonus amount tracking
+            if (totalBonusAmounts.ContainsKey(councilor))
+            {
+                totalBonusAmounts.Remove(councilor);
+            }
         }
 
         /// <summary>
@@ -61,6 +90,7 @@ namespace Assistance
         public static void ClearAll()
         {
             trackedBonuses.Clear();
+            totalBonusAmounts.Clear();
         }
     }
 }

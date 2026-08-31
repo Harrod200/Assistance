@@ -37,6 +37,7 @@ namespace Assistance
 
             StringBuilder result = new StringBuilder();
             bool hasMeaningfulEffect = false;
+            int totalBonusAmount = 0;
 
             foreach (CouncilorAttribute stat in stats)
             {
@@ -47,6 +48,7 @@ namespace Assistance
                 {
                     targetCouncilor.ModifyAttribute(stat, assistAmount);
                     AssistBonusTracker.RecordBonus(targetCouncilor, stat, assistAmount);
+                    totalBonusAmount += assistAmount;
                     hasMeaningfulEffect = true;
 
                     if (result.Length > 0)
