@@ -1,6 +1,6 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.3.8  
+**Version:** 0.3.9  
 **Last Updated:** 2026-09-06  
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
@@ -131,7 +131,8 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.3.8 | 2026-09-06 | **CURRENT** - Fixed localization file naming from English.en to TIMissionTemplate.en (language code, not file extension). Removed Persuasion stat check - replaced CouncilorAttackStat modifier with neutral FlatModifier(0). Added comprehensive assumptions section documenting condition return values, localization format, context lists, and modifier requirements. Localization now properly integrated. |
+| 0.3.9 | 2026-09-06 | **CURRENT** - Changed mission resolution from Contested to Automatic for guaranteed 100% success rate. Removed dice roll mechanic that was causing 50% success rate. Matches GoToGround and DefendInterests pattern - appropriate for uncontested support missions. Updated context lists to {Context.None, Context.None} matching vanilla pattern. Modifiers now empty lists as required by Automatic resolution. |
+| 0.3.8 | 2026-09-06 | Fixed localization file naming from English.en to TIMissionTemplate.en (language code, not file extension). Removed Persuasion stat check - replaced CouncilorAttackStat modifier with neutral FlatModifier(0). Added comprehensive assumptions section documenting condition return values, localization format, context lists, and modifier requirements. Localization now properly integrated. |
 | 0.3.7 | 2026-09-05 | Fixed critical condition return value bug preventing valid targets from being found. Created custom TIMissionCondition_MyFactionCouncilor implementation to replace vanilla. Fixed both custom conditions to return plain "_Pass"/"_Fail" constants instead of "ClassName_Pass"/"ClassName_Fail". Mission targeting now correctly validates all conditions and displays valid targets. |
 | 0.3.6 | 2026-09-04 | Fixed "no valid targets" error by removing overly restrictive mission conditions. Removed TargetInRange, Human, and FreeCouncilor conditions. Now only requires: MyFactionCouncilor (same faction) and PlayerFactionOnly (player-controlled faction). Allows targeting ANY councilor in player faction regardless of location or mission status. |
 | 0.3.5 | 2026-09-04 | Removed broken Harmony patch TIMissionTemplate_CanUseTemplatePatch that targeted non-existent method. Mission loads cleanly without patch errors. TIMissionCondition_PlayerFactionOnly condition properly prevents AI usage via game's native condition evaluation. Mod loading verified in game log: "Assist mission registered. Grants: councilorTypes=26". |
@@ -245,21 +246,16 @@ this.conditions = new List<TIMissionCondition>
 
 > **Note:** Earlier versions (v0.3.5 and prior) included `TIMissionCondition_FreeCouncilor()`, which does NOT mean "councilors with no mission". It specifically refers to **councilors who are not imprisoned/detained**. This condition was removed in v0.3.6 to allow targeting of detained councilors.
 
-### Resolution Method (Critical for AI Planner)
+### Resolution Method (Automatic for Guaranteed Success)
 
-Uses `TIMissionResolution_Contested` with:
-- **Attacking Modifiers:**
-  1. `TIMissionModifier_CouncilorAttackStat` (Persuasion) - REQUIRED for AI planner primaryAttackerStat property
-  2. `TIMissionModifier_ResourceSpent()` - Standard cost modifier
-- **Defending Modifiers:**
-  1. `TIMissionModifier_FlatModifier` (value: 0) - Prevents null issues
+Uses `TIMissionResolution_Automatic` with:
+- **Attacking Modifiers:** Empty list
+- **Defending Modifiers:** Empty list
+- **Context Lists:** `{Context.None, Context.None}` for both attacker and defender
 
-**Critical Note:** The AI mission planner (`AICouncilorMissionPlanner.PlanMissionsTask`) iterates through mission properties including:
-- `mission.primaryAttackerStat` - looks for `TIMissionModifier_CouncilorAttackStat` type
-- `mission.attackerContexts` - MUST NOT be empty (use `{Context.None}`)
-- `mission.defenderContexts` - MUST NOT be empty (use `{Context.None}`)
+**Design Rationale:** Automatic resolution provides guaranteed 100% success rate, appropriate for support missions with no opposition. This matches the pattern used by vanilla support missions (GoToGround, DefendInterests). No dice rolls, no contested mechanics - the mission always succeeds.
 
-If these aren't properly initialized, the game crashes with `KeyNotFoundException`.
+**Note:** In v0.3.7, the mission used `TIMissionResolution_Contested` which resulted in 50% success rate due to dice roll mechanics. This was changed in v0.3.9 to use Automatic resolution for reliability.
 
 ### Bonus Application & Removal
 

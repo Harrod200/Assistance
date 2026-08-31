@@ -32,29 +32,18 @@ namespace Assistance
                 this.resolutionOrder = 0; // Fastest resolution (0 = resolves first each turn)
                 this.allowedForAutoDefense = true; // Match Inspire
 
-                // Use Contested resolution (required for UI to work properly)
-                this.resolutionMethod = new TIMissionResolution_Contested
+                // Use Automatic resolution for guaranteed success (no dice roll)
+                // Matches GoToGround and DefendInterests pattern - support mission has no opposition
+                this.resolutionMethod = new TIMissionResolution_Automatic
                 {
-                    attackingModifiers = new List<TIMissionModifier>
-                    {
-                        new TIMissionModifier_FlatModifier
-                        {
-                            flatModifier = 0
-                        }
-                    },
-                    defendingModifiers = new List<TIMissionModifier>
-                    {
-                        new TIMissionModifier_FlatModifier
-                        {
-                            flatModifier = 0
-                        }
-                    }
+                    attackingModifiers = new List<TIMissionModifier>(),
+                    defendingModifiers = new List<TIMissionModifier>()
                 };
 
-                // Use empty context lists - Inspire mission uses similar pattern
-                // Empty lists prevent AI planner from attempting dictionary lookups
-                this.attackerContexts = new List<Context>();
-                this.defenderContexts = new List<Context>();
+                // Use context lists with "None" entries to match vanilla pattern
+                // This matches GoToGround and DefendInterests missions
+                this.attackerContexts = new List<Context> { Context.None, Context.None };
+                this.defenderContexts = new List<Context> { Context.None, Context.None };
 
                 // Mission conditions for target validation
                 // Assist targets ANY councilor in the player's faction
