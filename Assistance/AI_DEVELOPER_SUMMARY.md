@@ -8,6 +8,84 @@
 
 ---
 
+## 📋 Developer Workflow Instructions
+
+**IMPORTANT:** Every commit to this project must follow these steps:
+
+### Before Committing
+1. **Increment the version number** in `Properties/AssemblyInfo.cs`:
+   ```csharp
+   [assembly: AssemblyVersion("X.Y.Z.0")]
+   [assembly: AssemblyFileVersion("X.Y.Z.0")]
+   ```
+   - Use semantic versioning: MAJOR.MINOR.PATCH
+   - MAJOR: Breaking changes or major feature additions
+   - MINOR: New features or significant fixes
+   - PATCH: Bug fixes, small improvements, documentation updates
+
+2. **Update this developer summary**:
+   - Update the **Version** at the top to match `AssemblyInfo.cs`
+   - Update the **Last Updated** date (format: YYYY-MM-DD)
+   - Add new row to **Version History** table at the top:
+     ```markdown
+     | 0.X.Y | YYYY-MM-DD | Summary of changes made in this version |
+     ```
+   - Ensure CURRENT marker is on the latest version
+   - Update any relevant sections (Project Structure, Critical Details, Known Issues, etc.)
+
+3. **Build and test** the solution to ensure no compilation errors:
+   ```powershell
+   dotnet build Assistance/Assistance.csproj
+   ```
+
+### Committing
+4. **Stage changes**:
+   ```powershell
+   git add -A
+   ```
+
+5. **Commit with semantic message**:
+   ```powershell
+   git commit -m "feat/fix/docs: Brief description
+
+   - Detailed bullet point 1
+   - Detailed bullet point 2
+   - Detailed bullet point 3"
+   ```
+   - Use prefix: `feat:` (feature), `fix:` (bug fix), `docs:` (documentation), `refactor:` (code restructuring), `perf:` (performance)
+   - Include detailed changelog in body
+   - Reference version number in commit body if significant
+
+6. **Push to master**:
+   ```powershell
+   git push origin master
+   ```
+
+### Example Workflow
+```powershell
+# 1. Make code changes
+# 2. Update AssemblyInfo.cs version from 0.3.1 to 0.3.2
+# 3. Update AI_DEVELOPER_SUMMARY.md:
+#    - Change Version: 0.3.1 → 0.3.2
+#    - Change Last Updated: 2026-09-02 → 2026-09-03
+#    - Add row to Version History table
+#    - Update relevant documentation sections
+# 4. Build
+cd "C:\Users\Chris\source\repos\Assistance"
+dotnet build Assistance/Assistance.csproj
+
+# 5. Git operations
+git add -A
+git commit -m "fix: Resolve issue with bonus calculation
+
+- Fixed bonus amount calculation when source stat is 0
+- Added null check in AssistBonusTracker
+- Updated version to 0.3.2"
+git push origin master
+```
+
+---
+
 ## 🎯 Quick Overview
 
 The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that allows one player councilor to temporarily share a configurable percentage (0-100%, default 25%) of their stats with another friendly councilor. This helps completing difficult missions faster.
