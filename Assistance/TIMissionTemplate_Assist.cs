@@ -41,8 +41,7 @@ namespace Assistance
                         new TIMissionModifier_CouncilorAttackStat
                         {
                             attackerAttribute = CouncilorAttribute.Persuasion
-                        },
-                        new TIMissionModifier_ResourceSpent()
+                        }
                     },
                     defendingModifiers = new List<TIMissionModifier>
                     {
@@ -53,20 +52,18 @@ namespace Assistance
                     }
                 };
 
-                // Match Inspire context structure to avoid AI planner dictionary access errors
-                this.attackerContexts = new List<Context> { Context.None };
-                this.defenderContexts = new List<Context> { Context.None };
+                // Use empty context lists - Inspire mission uses similar pattern
+                // Empty lists prevent AI planner from attempting dictionary lookups
+                this.attackerContexts = new List<Context>();
+                this.defenderContexts = new List<Context>();
 
                 // Mission conditions for target validation
-                // Match Inspire mission targeting rules exactly
-                // PLUS: Player faction only (AI cannot use this mission)
+                // Assist targets ANY councilor in the player's faction
+                // No restrictions on location, mission status, or other factors
                 this.conditions = new List<TIMissionCondition>
                 {
-                    new TIMissionCondition_TargetInRange(),
-                    new TIMissionCondition_Human(),
-                    new TIMissionCondition_MyFactionCouncilor(),
-                    new TIMissionCondition_FreeCouncilor(),
-                    new TIMissionCondition_PlayerFactionOnly()  // Prevent AI from using this mission
+                    new TIMissionCondition_MyFactionCouncilor(),  // Target must be same faction
+                    new TIMissionCondition_PlayerFactionOnly()    // Faction must be player-controlled
                 };
 
                 this.movementRule = MissionMovementRule.MoveToTarget;

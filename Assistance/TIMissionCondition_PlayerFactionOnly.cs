@@ -12,14 +12,14 @@ namespace Assistance
         public override string CanTarget(TICouncilorState councilor, TIGameState possibleTarget)
         {
             if (councilor == null || councilor.faction == null)
-                return base.GetType().Name + TIMissionCondition.fail;
+                return TIMissionCondition.fail;
 
             // Only allow player-controlled factions
             // playerControl returns null for AI factions, non-null for player factions
             if (councilor.faction.playerControl != null)
-                return base.GetType().Name + TIMissionCondition.pass;
+                return TIMissionCondition.pass;
             else
-                return base.GetType().Name + TIMissionCondition.fail;
+                return TIMissionCondition.fail;
         }
     }
 }
