@@ -72,6 +72,7 @@
     <Compile Include="Main.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TICouncilorState_CompleteMissionPatch.cs" />
+    <Compile Include="TIMissionCondition_PlayerFactionOnly.cs" />
     <Compile Include="TIMissionEffect_Assist.cs" />
     <Compile Include="TIMissionModifier_AssistFlat.cs" />
     <Compile Include="TIMissionModifier_AssistStat.cs" />

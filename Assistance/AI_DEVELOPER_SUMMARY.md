@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.3.1  
-**Last Updated:** 2026-09-02  
+**Version:** 0.3.2  
+**Last Updated:** 2026-09-03  
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+  
@@ -105,7 +105,8 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.3.1 | 2026-09-02 | **CURRENT** - Fixed critical AI mission planner KeyNotFoundException crash. Restructured mission template to exactly match vanilla Inspire mission structure. Added TIMissionModifier_ResourceSpent, defensive modifiers, proper Context lists, and all required conditions (Human, FreeCouncilor). Enhanced modifier inheritance and bootstrap logging. |
+| 0.3.2 | 2026-09-03 | **CURRENT** - Restricted Assist mission to player-controlled factions only. Created TIMissionCondition_PlayerFactionOnly to prevent AI players from triggering this mission. Mission now requires councilor's faction to have a player controller. |
+| 0.3.1 | 2026-09-02 | Fixed critical AI mission planner KeyNotFoundException crash. Restructured mission template to exactly match vanilla Inspire mission structure. Added TIMissionModifier_ResourceSpent, defensive modifiers, proper Context lists, and all required conditions (Human, FreeCouncilor). Enhanced modifier inheritance and bootstrap logging. |
 | 0.3.0 | 2026-09-01 | Fixed target validation to match Inspire mission exactly. Removed CouncilorOnEarth condition and TargetHasNoMission custom condition. Assist now targets any friendly councilor regardless of mission status. |
 | 0.2.0 | 2026-08-31 | Fixed UI crash by switching from TIMissionResolution_Automatic to TIMissionResolution_Contested with proper modifiers. Added custom TIMissionModifier_AssistStat modifier. |
 | 0.1.0 | 2026-08-30 | Initial working version. Implemented core assist mission, stat transfer logic, bonus tracking with auto-removal, and English localization. |
@@ -120,6 +121,7 @@ Assistance/
 ├── TIMissionEffect_Assist.cs                [Stat transfer logic during mission completion]
 ├── TIMissionModifier_AssistStat.cs          [Mission resolution modifier for contested resolution]
 ├── TIMissionModifier_AssistFlat.cs          [Placeholder flat modifier]
+├── TIMissionCondition_PlayerFactionOnly.cs  [Custom condition to restrict mission to player factions]
 ├── AssistBonusTracker.cs                    [Tracks and removes bonuses after mission complete]
 ├── TICouncilorState_CompleteMissionPatch.cs [Harmony patch to trigger bonus removal]
 ├── CouncilorMissionCanvasController_UpdateModifierListPatch.cs [UI rendering patch]
@@ -127,7 +129,7 @@ Assistance/
 ├── Settings.cs                              [Configuration storage]
 ├── AssistMissionBootstrapPatch.cs           [Harmony bootstrap patch for mission registration]
 ├── English.xml                              [Localization strings]
-├── Properties/AssemblyInfo.cs               [Assembly version: 0.3.1]
+├── Properties/AssemblyInfo.cs               [Assembly version: 0.3.2]
 └── bin/Debug/Assistance.dll                 [Compiled mod, ~11 KB]
 ```
 
@@ -142,21 +144,28 @@ The Assist mission template is built to match the vanilla **Inspire** mission ex
 
 This JSON file contains all vanilla mission definitions. Compare your Assist mission against the Inspire mission in this file to verify compatibility.
 
-### Mission Targeting (Matches Inspire Mission Exactly)
+### Mission Targeting (Matches Inspire Mission, Player Only)
 
-The Assist mission uses **all 4 of Inspire's conditions:**
+The Assist mission uses **5 conditions** (4 from Inspire + 1 custom):
 
 ```csharp
 this.conditions = new List<TIMissionCondition>
 {
-	new TIMissionCondition_TargetInRange(),      // Target must be in communication range
-	new TIMissionCondition_Human(),              // Target must be human (not alien/proxy)
-	new TIMissionCondition_MyFactionCouncilor()  // Target must be same faction, not self
-	new TIMissionCondition_FreeCouncilor()       // Target must not be detained
+	new TIMissionCondition_TargetInRange(),       // Target must be in communication range
+	new TIMissionCondition_Human(),               // Target must be human (not alien/proxy)
+	new TIMissionCondition_MyFactionCouncilor()   // Target must be same faction, not self
+	new TIMissionCondition_FreeCouncilor()        // Target must not be detained
+	new TIMissionCondition_PlayerFactionOnly()    // Source must be from player-controlled faction (AI CANNOT USE)
 };
 ```
 
-**IMPORTANT:** The Assist mission can target councilors who are actively on other missions (similar to Inspire). The `FreeCouncilor` condition only checks if the councilor is detained, not whether they have an active mission.
+**Key Features:**
+- The Assist mission can target councilors who are actively on other missions (similar to Inspire)
+- The `FreeCouncilor` condition only checks if the councilor is detained, not whether they have an active mission
+- The `PlayerFactionOnly` condition (v0.3.2+) **restricts this mission to player factions only** - AI players cannot use it
+  - Checks if `councilor.faction.playerControl != null`
+  - If null, faction is AI-controlled and mission is disabled
+  - This prevents AI players from "gaming" the assist mechanic
 
 ### Resolution Method (Critical for AI Planner)
 

@@ -59,12 +59,14 @@ namespace Assistance
 
                 // Mission conditions for target validation
                 // Match Inspire mission targeting rules exactly
+                // PLUS: Player faction only (AI cannot use this mission)
                 this.conditions = new List<TIMissionCondition>
                 {
                     new TIMissionCondition_TargetInRange(),
                     new TIMissionCondition_Human(),
                     new TIMissionCondition_MyFactionCouncilor(),
-                    new TIMissionCondition_FreeCouncilor()
+                    new TIMissionCondition_FreeCouncilor(),
+                    new TIMissionCondition_PlayerFactionOnly()  // Prevent AI from using this mission
                 };
 
                 this.movementRule = MissionMovementRule.MoveToTarget;
