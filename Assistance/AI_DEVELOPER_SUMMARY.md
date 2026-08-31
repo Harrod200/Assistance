@@ -282,6 +282,12 @@ Assistance/                                 [Solution Root]
 - **What Happened:** v0.3.10 (broken approach), v0.3.11 (incomplete fix), v0.3.12 (correct fix). Having each documented helped understand the problem evolution
 - **Takeaway:** Always document failed attempts in version history with specific reasons - it prevents re-trying the same broken approach
 
+### 7. **PlayerControl Property Does NOT Indicate Councilor Ownership**
+- **Lesson:** `councilor.faction.playerControl != null` checks if a FACTION is player-controlled, NOT if a councilor belongs to the player
+- **Important Distinction:** `faction.playerControl` is the faction's player controller reference (human vs AI), but a single player faction can contain councilors from MULTIPLE different factions/origins through diplomacy and faction merging
+- **Practical Impact:** Using `playerControl` to check mission availability correctly prevents AI factions from using the Assist mission, but it doesn't restrict by councilor ownership or affiliation
+- **Takeaway:** Always understand what a property actually represents before using it for game logic; property names can be misleading
+
 ---
 
 ## 🔑 Critical Implementation Details
