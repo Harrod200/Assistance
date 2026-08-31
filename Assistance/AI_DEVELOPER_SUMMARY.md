@@ -290,6 +290,18 @@ Assistance/                                 [Solution Root]
 - **Decompiled Evidence:** Game's own `TIFactionCondition_bAIControlled` condition uses exactly this pattern: `state.ref_faction.player.isAI`
 - **Takeaway:** Always examine decompiled game code for similar conditions to understand the correct pattern
 
+### 8. **Mission Registration and Availability Are Different Operations**
+- **Lesson:** Registering a mission template with `TemplateManager.Add()` does NOT automatically make it available to councilors. You must ALSO grant it to councilor types
+- **Discovery (v0.4.0+):** Mission was registered but never appeared for player councilors. Investigation revealed: (1) Template registration succeeded, (2) But `GrantToAllCouncilors()` was disabled with a comment about AI planner crashes, (3) Without granting to councilor types, mission never appeared in available missions list
+- **Root Cause:** Missions must be explicitly added to each `TICouncilorTypeTemplate.missionNames` array. Mission conditions like `PlayerFactionOnly` filter which councilors CAN USE the mission, but they don't make it AVAILABLE at all
+- **Key Distinction:** 
+  - **Registration:** `TemplateManager.Add()` - makes mission template exist in the game
+  - **Granting:** Add mission name to `councilType.missionNames` - makes it available to that councilor type
+  - **Conditions:** `TIMissionCondition_*` - restricts WHO can use the mission once available
+  - **Filtering:** Harmony patches - prevent mission from appearing in automatic AI evaluation pipelines
+- **Current Status (v0.4.0+):** `GrantToAllCouncilors()` re-enabled but `TemplateManager.IterateByClass<TICouncilorTypeTemplate>(true)` returns 0 results at `SolarSystemBootstrap.Initialize()` time. This suggests councilor type templates haven't been loaded yet at this bootstrap phase
+- **Takeaway:** Understand the full lifecycle: Registration -> Granting -> Conditions -> Filtering. Each step is necessary and serves a different purpose
+
 ---
 
 ## 🔑 Critical Implementation Details

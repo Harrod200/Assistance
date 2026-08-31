@@ -41,16 +41,28 @@ namespace Assistance
                     {
                         controlStatus = __instance.faction.player.isAI ? "AI" : "PLAYER";
                     }
-                    Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Called for councilor '{0}', faction control={1}, result missions={2}", 
+
+                    // Check if Assist is in the list
+                    bool hasAssist = __result != null && __result.Exists(m => m != null && m.dataName == "Assist");
+                    Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Called for councilor '{0}', faction control={1}, result missions={2}, hasAssist={3}", 
                         __instance != null ? __instance.displayName : "NULL",
                         controlStatus,
-                        __result.Count));
+                        __result.Count,
+                        hasAssist));
                 }
 
                 // Only filter for AI factions
                 // AI-controlled factions have faction.player.isAI == true
                 if (__instance == null || __instance.faction == null || __instance.faction.player == null || !__instance.faction.player.isAI)
                 {
+                    if (Main.mod != null && __result != null)
+                    {
+                        bool hasAssist = __result.Exists(m => m != null && m.dataName == "Assist");
+                        if (hasAssist)
+                        {
+                            Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Keeping Assist for PLAYER faction councilor '{0}'", __instance.displayName));
+                        }
+                    }
                     return;
                 }
 

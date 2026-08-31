@@ -72,14 +72,60 @@ namespace Assistance
         {
             int count = 0;
 
-            // NOTE: Do NOT grant Assist mission to councilor types here
-            // Reason: AI mission planner crashes when evaluating missions before checking conditions
-            // The mission has empty modifier lists, which causes KeyNotFoundException in AI planner
-            // 
-            // Instead, rely entirely on manual mission selection by players
-            // Assist mission is still available and can be selected, but won't appear in automatic lists
-            //
-            // This prevents the crash entirely by keeping the mission out of the AI planner's evaluation pipeline
+            try
+            {
+                // Get all councilor types
+                var councilTypes = TemplateManager.IterateByClass<TICouncilorTypeTemplate>(true).ToList();
+
+                if (Main.mod != null)
+                {
+                    Main.mod.Logger.Log(string.Format("Found {0} councilor types to grant Assist mission to.", councilTypes.Count));
+                }
+
+                // Grant Assist mission to all councilor types
+                // This adds the mission to each councilor type's available missions
+                foreach (TICouncilorTypeTemplate councilType in councilTypes)
+                {
+                    if (councilType != null)
+                    {
+                        if (Main.mod != null)
+                        {
+                            Main.mod.Logger.Log(string.Format("Processing councilor type: {0}, current missions: {1}", councilType.dataName, string.Join(", ", councilType.missionNames ?? new string[0])));
+                        }
+
+                        if (!Contains(councilType.missionNames, MissionName))
+                        {
+                            councilType.missionNames = Append(councilType.missionNames, MissionName);
+
+                            // Clear the cached missions list so it gets repopulated with the new mission
+                            ClearPrivateCache(councilType, "_missions");
+
+                            count++;
+
+                            if (Main.mod != null)
+                            {
+                                Main.mod.Logger.Log(string.Format("Granted Assist mission to councilor type: {0}", councilType.dataName));
+                            }
+                        }
+                        else if (Main.mod != null)
+                        {
+                            Main.mod.Logger.Log(string.Format("Assist mission already present in councilor type: {0}", councilType.dataName));
+                        }
+                    }
+                }
+
+                if (Main.mod != null && count > 0)
+                {
+                    Main.mod.Logger.Log(string.Format("Successfully granted Assist mission to {0} councilor types.", count));
+                }
+            }
+            catch (Exception ex)
+            {
+                if (Main.mod != null)
+                {
+                    Main.mod.Logger.Error("Error granting Assist mission to councilor types: " + ex);
+                }
+            }
 
             return count;
         }
