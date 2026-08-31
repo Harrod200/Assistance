@@ -36,15 +36,20 @@ namespace Assistance
                 // Log every call for debugging
                 if (Main.mod != null)
                 {
-                    Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Called for councilor '{0}', faction playerControl={1}, result missions={2}", 
+                    string controlStatus = "UNKNOWN";
+                    if (__instance != null && __instance.faction != null && __instance.faction.player != null)
+                    {
+                        controlStatus = __instance.faction.player.isAI ? "AI" : "PLAYER";
+                    }
+                    Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Called for councilor '{0}', faction control={1}, result missions={2}", 
                         __instance != null ? __instance.displayName : "NULL",
-                        __instance != null && __instance.faction != null ? (__instance.faction.playerControl != null ? "NOT_NULL (PLAYER)" : "NULL (AI)") : "UNKNOWN",
+                        controlStatus,
                         __result.Count));
                 }
 
                 // Only filter for AI factions
-                // Player-controlled factions have faction.playerControl != null
-                if (__instance == null || __instance.faction == null || __instance.faction.playerControl != null)
+                // AI-controlled factions have faction.player.isAI == true
+                if (__instance == null || __instance.faction == null || __instance.faction.player == null || !__instance.faction.player.isAI)
                 {
                     return;
                 }
