@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.3.12  
-**Last Updated:** 2026-09-08
+**Version:** 0.4.0  
+**Last Updated:** 2026-09-09
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+
@@ -153,7 +153,8 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.3.12 | 2026-09-08 | **CURRENT** - Fixed persistent KeyNotFoundException crash in AI mission planner. Initial approach (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch targeting non-existent method) was incorrect. Root cause: Assist mission added to ALL councilor types, but AI planner evaluates modifiers before checking conditions, causing crash on empty modifier lists. Solution: Created TIFactionState_GetAllPossibleMissionsPatch to filter Assist mission from AI factions at mission retrieval stage (before evaluation). This prevents AI planner from ever seeing the mission. Player factions unaffected. |
+| 0.4.0 | 2026-09-09 | **CURRENT** - Fixed compiler warning CS0108 in TIMissionModifier_AssistStat. Added 'new' keyword to attackerAttribute field override to explicitly indicate intentional field shadowing. Game loads and runs successfully with no warnings or errors. Clean build achieved. |
+| 0.3.12 | 2026-09-08 | Fixed persistent KeyNotFoundException crash in AI mission planner. Initial approach (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch targeting non-existent method) was incorrect. Root cause: Assist mission added to ALL councilor types, but AI planner evaluates modifiers before checking conditions, causing crash on empty modifier lists. Solution: Created TIFactionState_GetAllPossibleMissionsPatch to filter Assist mission from AI factions at mission retrieval stage (before evaluation). This prevents AI planner from ever seeing the mission. Player factions unaffected. |
 | 0.3.11 | 2026-09-08 | Attempted to fix KeyNotFoundException by removing non-functional Harmony patch (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch) that targeted method "GetMissionsForCouncilor" which doesn't exist in game assembly. Removed patch file and updated version, but crash persisted - investigation revealed mission conditions alone insufficient. |
 | 0.3.10 | 2026-09-07 | Fixed KeyNotFoundException crash in AI mission planner. Created AICouncilorMissionPlanner_GetMissionsForCouncilorPatch to filter Assist mission from AI councilor mission evaluation. Patch intercepts GetMissionsForCouncilor() and removes Assist from list for AI-controlled factions only. Player-controlled factions can still use Assist mission. Added comprehensive logging and error handling. Resolves critical crash when AI factions attempt mission planning. |
 | 0.3.9 | 2026-09-06 | Changed mission resolution from Contested to Automatic for guaranteed 100% success rate. Removed dice roll mechanic that was causing 50% success rate. Matches GoToGround and DefendInterests pattern - appropriate for uncontested support missions. Updated context lists to {Context.None, Context.None} matching vanilla pattern. Modifiers now empty lists as required by Automatic resolution. |
