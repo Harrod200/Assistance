@@ -11,7 +11,7 @@ namespace Assistance
     /// </summary>
     public class TIMissionModifier_AssistStat : TIMissionModifier_CouncilorStat
     {
-        public CouncilorAttribute attackerAttribute = CouncilorAttribute.Persuasion;
+        public new CouncilorAttribute attackerAttribute = CouncilorAttribute.Persuasion;
 
         public override float GetModifier(TICouncilorState attackingCouncilor, TIGameState target = null, float resourcesSpent = 0f, FactionResource resource = FactionResource.None)
         {

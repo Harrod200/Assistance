@@ -66,13 +66,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AICouncilorMissionPlanner_GetMissionsForCouncilorPatch.cs" />
     <Compile Include="AssistBonusTracker.cs" />
     <Compile Include="AssistMissionBootstrapPatch.cs" />
     <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TICouncilorState_CompleteMissionPatch.cs" />
+    <Compile Include="TICouncilorState_GetPossibleMissionListPatch.cs" />
     <Compile Include="TIMissionCondition_MyFactionCouncilor.cs" />
     <Compile Include="TIMissionCondition_PlayerFactionOnly.cs" />
     <Compile Include="TIMissionEffect_Assist.cs" />

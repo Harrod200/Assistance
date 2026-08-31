@@ -72,22 +72,14 @@ namespace Assistance
         {
             int count = 0;
 
-            // Grant to all councilor types that don't have it yet
-            // BUT: Only grant to player-controlled faction councilor types
-            // This prevents AI factions from ever attempting to use this mission
-            foreach (TICouncilorTypeTemplate councilorType in TemplateManager.GetAllTemplates<TICouncilorTypeTemplate>(true))
-            {
-                if (councilorType != null && !Contains(councilorType.missionNames, "Assist"))
-                {
-                    // Check if this councilor type belongs to a player faction
-                    // If it's part of AI faction setup, skip it
-                    // This is a conservative approach - we'll grant it to all types at registration
-                    // and rely on TIMissionCondition_PlayerFactionOnly to filter at runtime
-                    councilorType.missionNames = Append(councilorType.missionNames, "Assist");
-                    councilorType._missions = null;
-                    count++;
-                }
-            }
+            // NOTE: Do NOT grant Assist mission to councilor types here
+            // Reason: AI mission planner crashes when evaluating missions before checking conditions
+            // The mission has empty modifier lists, which causes KeyNotFoundException in AI planner
+            // 
+            // Instead, rely entirely on manual mission selection by players
+            // Assist mission is still available and can be selected, but won't appear in automatic lists
+            //
+            // This prevents the crash entirely by keeping the mission out of the AI planner's evaluation pipeline
 
             return count;
         }

@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.3.10  
-**Last Updated:** 2026-09-07  
+**Version:** 0.3.12  
+**Last Updated:** 2026-09-08
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+
@@ -153,7 +153,9 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.3.10 | 2026-09-07 | **CURRENT** - Fixed KeyNotFoundException crash in AI mission planner. Created AICouncilorMissionPlanner_GetMissionsForCouncilorPatch to filter Assist mission from AI councilor mission evaluation. Patch intercepts GetMissionsForCouncilor() and removes Assist from list for AI-controlled factions only. Player-controlled factions can still use Assist mission. Added comprehensive logging and error handling. Resolves critical crash when AI factions attempt mission planning. |
+| 0.3.12 | 2026-09-08 | **CURRENT** - Fixed persistent KeyNotFoundException crash in AI mission planner. Initial approach (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch targeting non-existent method) was incorrect. Root cause: Assist mission added to ALL councilor types, but AI planner evaluates modifiers before checking conditions, causing crash on empty modifier lists. Solution: Created TIFactionState_GetAllPossibleMissionsPatch to filter Assist mission from AI factions at mission retrieval stage (before evaluation). This prevents AI planner from ever seeing the mission. Player factions unaffected. |
+| 0.3.11 | 2026-09-08 | Attempted to fix KeyNotFoundException by removing non-functional Harmony patch (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch) that targeted method "GetMissionsForCouncilor" which doesn't exist in game assembly. Removed patch file and updated version, but crash persisted - investigation revealed mission conditions alone insufficient. |
+| 0.3.10 | 2026-09-07 | Fixed KeyNotFoundException crash in AI mission planner. Created AICouncilorMissionPlanner_GetMissionsForCouncilorPatch to filter Assist mission from AI councilor mission evaluation. Patch intercepts GetMissionsForCouncilor() and removes Assist from list for AI-controlled factions only. Player-controlled factions can still use Assist mission. Added comprehensive logging and error handling. Resolves critical crash when AI factions attempt mission planning. |
 | 0.3.9 | 2026-09-06 | Changed mission resolution from Contested to Automatic for guaranteed 100% success rate. Removed dice roll mechanic that was causing 50% success rate. Matches GoToGround and DefendInterests pattern - appropriate for uncontested support missions. Updated context lists to {Context.None, Context.None} matching vanilla pattern. Modifiers now empty lists as required by Automatic resolution. |
 | 0.3.8 | 2026-09-06 | Fixed localization file naming from English.en to TIMissionTemplate.en (language code, not file extension). Removed Persuasion stat check - replaced CouncilorAttackStat modifier with neutral FlatModifier(0). Added comprehensive assumptions section documenting condition return values, localization format, context lists, and modifier requirements. Localization now properly integrated. |
 | 0.3.7 | 2026-09-05 | Fixed critical condition return value bug preventing valid targets from being found. Created custom TIMissionCondition_MyFactionCouncilor implementation to replace vanilla. Fixed both custom conditions to return plain "_Pass"/"_Fail" constants instead of "ClassName_Pass"/"ClassName_Fail". Mission targeting now correctly validates all conditions and displays valid targets. |
@@ -232,6 +234,52 @@ Assistance/                                 [Solution Root]
 └── Deploy.ps1                              [⭐ Deployment script - run after building]
     Copies mod files to Terra Invicta Mods folder
 ```
+
+---
+
+## 📚 Lessons Learned (v0.3.10-0.3.12 Debugging)
+
+### 1. **Patching at the Wrong Level Causes Silent Failures**
+- **Lesson:** When creating Harmony patches, always verify the target method exists in the decompiled game assembly before implementing
+- **What Happened:** Created `AICouncilorMissionPlanner_GetMissionsForCouncilorPatch` targeting method "GetMissionsForCouncilor" which doesn't exist. Patch silently failed during load, but mod version still showed as v0.2.0 instead of crashing with explicit error
+- **Solution:** Use decompiled game code (GameAnalysis folder) to verify method signatures, names, and namespaces BEFORE writing patches
+- **Takeaway:** Test patch attribute strings against actual decompiled methods first
+
+### 2. **Mission Conditions Are NOT Sufficient to Prevent Evaluation**
+- **Lesson:** AI mission planner evaluates mission properties (including modifiers) BEFORE thoroughly checking mission conditions
+- **What Happened:** Although `TIMissionCondition_PlayerFactionOnly` correctly returned `fail` for AI factions, the AI planner still tried to access the mission's empty modifier lists, causing KeyNotFoundException
+- **Root Cause:** The mission was in the councilor type's `missionNames` array, so it appeared in `GetAllPossibleMissions()` result. AI planner fetches the mission template and starts evaluating payoff/modifiers before checking conditions
+- **Solution:** Filter missions at the RETRIEVAL stage (in `GetAllPossibleMissions()`) rather than at the condition-checking stage
+- **Takeaway:** For missions that can't be properly evaluated by AI (empty modifiers, etc.), prevent them from appearing in the available mission list entirely
+
+### 3. **Empty Modifier Lists Cause Dictionary KeyNotFoundExceptions**
+- **Lesson:** The AI mission planner maintains dictionaries of modifiers by mission. If a mission has empty modifier lists, lookups fail when the planner tries to access payoff calculations
+- **What Happened:** `TIMissionTemplate_Assist` has `attackingModifiers = new List<TIMissionModifier>()` and `defendingModifiers = new List<TIMissionModifier>()` for the Automatic resolution type. When AI planner tried to evaluate, it crashed with "Key not in dictionary"
+- **Why This Happened:** v0.3.9 changed from Contested to Automatic resolution. Automatic has no modifier evaluation, but AI planner doesn't know about this mission type
+- **Solution:** Either (1) populate modifier lists (not applicable here), or (2) prevent AI from seeing/evaluating the mission at all
+- **Takeaway:** Custom missions with non-standard resolution types need special AI handling
+
+### 4. **The Right Interception Point Matters**
+- **Lesson:** There are multiple places to filter missions: bootstrap registration, condition checking, mission retrieval, and during evaluation. Each has different tradeoffs
+- **Wrong Approach:** Filter during bootstrap `GrantToAllCouncilors()` - but this requires identifying AI faction types, which don't have faction information at template level
+- **Wrong Approach:** Rely on mission conditions - they're checked too late in the evaluation pipeline
+- **Correct Approach:** Patch `TIFactionState.GetAllPossibleMissions()` - this is where missions are retrieved FOR a specific faction instance (which has faction.playerControl information)
+- **Key Insight:** Patch at the level closest to where the decision can be made with full context (the faction instance)
+- **Takeaway:** Before writing a patch, trace the execution path to find the earliest point where you have the necessary context to make the decision
+
+### 5. **Debugging Game Mods Requires Multiple Tools**
+- **Lesson:** Fixing a silent mod load failure requires: (1) Player.log inspection, (2) decompiled game assembly analysis, (3) mod source code review, (4) iterative rebuild/test cycles
+- **Process:** 
+  - Player.log showed Harmony exception and v0.2.0 load failure
+  - Decompiled assembly revealed actual method names and locations
+  - Source code review showed multiple potential interception points
+  - Build/test revealed which approach was correct
+- **Takeaway:** When a patch fails silently, check logs first, then verify target method names in decompiled game code
+
+### 6. **Semantic Versioning and Release Notes Matter**
+- **Lesson:** Clear version history and release notes help track which fix was attempted and when it was reverted
+- **What Happened:** v0.3.10 (broken approach), v0.3.11 (incomplete fix), v0.3.12 (correct fix). Having each documented helped understand the problem evolution
+- **Takeaway:** Always document failed attempts in version history with specific reasons - it prevents re-trying the same broken approach
 
 ---
 
