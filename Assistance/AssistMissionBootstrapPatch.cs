@@ -36,7 +36,36 @@ namespace Assistance
 
         private static void RegisterMissionTemplate()
         {
-            TemplateManager.Add(new TIMissionTemplate_Assist(), typeof(TIMissionTemplate), true);
+            try
+            {
+                var assistMission = new TIMissionTemplate_Assist();
+                if (Main.mod != null)
+                {
+                    Main.mod.Logger.Log("Created TIMissionTemplate_Assist instance.");
+                    Main.mod.Logger.Log("  - dataName: " + assistMission.dataName);
+                    Main.mod.Logger.Log("  - friendlyName: " + assistMission.friendlyName);
+                    Main.mod.Logger.Log("  - resolutionMethod: " + (assistMission.resolutionMethod != null ? assistMission.resolutionMethod.GetType().Name : "NULL"));
+                    Main.mod.Logger.Log("  - attackingModifiers count: " + (assistMission.resolutionMethod != null ? assistMission.resolutionMethod.attackingModifiers.Count : -1));
+                    Main.mod.Logger.Log("  - defendingModifiers count: " + (assistMission.resolutionMethod != null ? assistMission.resolutionMethod.defendingModifiers.Count : -1));
+                    Main.mod.Logger.Log("  - attackerContexts count: " + assistMission.attackerContexts.Count);
+                    Main.mod.Logger.Log("  - defenderContexts count: " + assistMission.defenderContexts.Count);
+                    Main.mod.Logger.Log("  - conditions count: " + assistMission.conditions.Count);
+                }
+
+                TemplateManager.Add(assistMission, typeof(TIMissionTemplate), true);
+
+                if (Main.mod != null)
+                {
+                    Main.mod.Logger.Log("Successfully registered Assist mission template with TemplateManager.");
+                }
+            }
+            catch (Exception ex)
+            {
+                if (Main.mod != null)
+                {
+                    Main.mod.Logger.Error("Error registering mission template: " + ex);
+                }
+            }
         }
 
         private static int GrantToAllCouncilors()

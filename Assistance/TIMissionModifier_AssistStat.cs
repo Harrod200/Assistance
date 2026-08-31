@@ -4,7 +4,12 @@ using PavonisInteractive.TerraInvicta;
 
 namespace Assistance
 {
-    public class TIMissionModifier_AssistStat : TIMissionModifier
+    /// <summary>
+    /// Custom modifier that calculates assist bonus based on source councilor's Persuasion stat.
+    /// This is applied as part of the mission resolution to determine success chance.
+    /// The actual stat bonuses are applied in TIMissionEffect_Assist.
+    /// </summary>
+    public class TIMissionModifier_AssistStat : TIMissionModifier_CouncilorStat
     {
         public CouncilorAttribute attackerAttribute = CouncilorAttribute.Persuasion;
 
@@ -13,7 +18,9 @@ namespace Assistance
             if (attackingCouncilor == null)
                 return 0f;
 
-            return (float)attackingCouncilor.GetAttribute(this.attackerAttribute, true, true, true, false, false, false);
+            // Return the Persuasion stat of the assisting councilor
+            // multiplied by the base multiplier from TIMissionModifier_CouncilorStat (default 1.0)
+            return (float)attackingCouncilor.GetAttribute(this.attackerAttribute, true, true, true, false, false, false) * this.multiplier;
         }
 
         public override string displayName
@@ -22,26 +29,14 @@ namespace Assistance
             {
                 try
                 {
-                    // Try to get localized name first
-                    string locKey = new StringBuilder(this.GetType().Name).Append(".displayName").ToString();
-                    string locName = Loc.T(locKey);
-
-                    // If localization returned the key itself (not found), return the attribute name instead
-                    if (!string.IsNullOrEmpty(locName) && locName != locKey)
-                    {
-                        return locName;
-                    }
-
-                    // Fallback: return the attribute name
-                    string name = this.attackerAttribute.ToString();
-                    return string.IsNullOrEmpty(name) ? "Stat Bonus" : name;
+                    return TIUtilities.GetAttributeString(this.attackerAttribute);
                 }
                 catch
                 {
-                    // Ultimate fallback
-                    return "Stat Bonus";
+                    return "Persuasion";
                 }
             }
         }
     }
 }
+
