@@ -103,8 +103,11 @@ dotnet build Assistance/Assistance.csproj
 # Copy DLL to game folder when ready for testing
 Copy-Item "Assistance\bin\Debug\Assistance.dll" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
 
-# (Optional) Also copy English.xml if needed
-Copy-Item "Assistance\English.xml" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
+# Copy localization file (TIMissionTemplate.en - correct naming convention per v0.3.8)
+Copy-Item "Assistance\TIMissionTemplate.en" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
+
+# Clear mod cache to force fresh load (important after code changes with Harmony patches)
+Remove-Item "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\*.cache" -Force -ErrorAction SilentlyContinue
 
 # Check game log for mod messages
 Get-Content "$env:LOCALAPPDATA\..\LocalLow\Pavonis Interactive\TerraInvicta\Player.log" -Tail 50
