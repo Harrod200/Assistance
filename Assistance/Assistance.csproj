@@ -72,6 +72,7 @@
     <Compile Include="Main.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TICouncilorState_CompleteMissionPatch.cs" />
+    <Compile Include="TIMissionCondition_TargetHasNoMission.cs" />
     <Compile Include="TIMissionEffect_Assist.cs" />
     <Compile Include="TIMissionModifier_AssistFlat.cs" />
     <Compile Include="TIMissionModifier_AssistStat.cs" />
@@ -80,6 +81,7 @@
     <Compile Include="TIMissionTemplate_PrimaryAttackerStatPatch.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="AI_DEVELOPER_SUMMARY.md" />
     <None Include="CRASH_FIX_LOG.md" />
     <None Include="FIX_TARGET_VALIDATION.md" />
     <None Include="MANIFEST.md" />

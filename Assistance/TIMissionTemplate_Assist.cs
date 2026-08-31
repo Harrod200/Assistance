@@ -30,18 +30,27 @@ namespace Assistance
             this.resolutionOrder = 0; // Fastest resolution (0 = resolves first each turn)
             this.allowedForAutoDefense = false;
 
-            // Use Automatic resolution for guaranteed success (no failure possibility)
-            this.resolutionMethod = new TIMissionResolution_Automatic();
+            // Use Contested resolution (required for UI to work properly)
+            this.resolutionMethod = new TIMissionResolution_Contested
+            {
+                attackingModifiers = new List<TIMissionModifier>
+                {
+                    new TIMissionModifier_AssistStat()
+                },
+                defendingModifiers = new List<TIMissionModifier>()
+            };
 
             this.attackerContexts = new List<Context> { 0 };
             this.defenderContexts = new List<Context>();
 
             // Mission conditions for target validation
+            // Match Inspire mission targeting rules
             this.conditions = new List<TIMissionCondition>
             {
                 new TIMissionCondition_TargetInRange(),
-                new TIMissionCondition_CouncilorOnEarth(),
                 new TIMissionCondition_MyFactionCouncilor()
+                // Note: Inspire uses TIMissionCondition_FreeCouncilor which checks for detained councilors
+                // Since Assist is for friendly councilors only, we don't need that check
             };
 
             this.movementRule = (MissionMovementRule)1;
