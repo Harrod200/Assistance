@@ -30,25 +30,8 @@ namespace Assistance
             this.resolutionOrder = 0; // Fastest resolution (0 = resolves first each turn)
             this.allowedForAutoDefense = false;
 
-            // Use Contested resolution with proper modifiers (like MoreRealisticNukes)
-            // This prevents crashes when AI accesses primaryAttackerStat and allows proper UI display
-            this.resolutionMethod = new TIMissionResolution_Contested
-            {
-                attackingModifiers = new List<TIMissionModifier>
-                {
-                    new TIMissionModifier_AssistStat
-                    {
-                        attackerAttribute = CouncilorAttribute.Persuasion
-                    }
-                },
-                defendingModifiers = new List<TIMissionModifier>
-                {
-                    new TIMissionModifier_AssistFlat
-                    {
-                        flatModifier = 0f
-                    }
-                }
-            };
+            // Use Automatic resolution for guaranteed success (no failure possibility)
+            this.resolutionMethod = new TIMissionResolution_Automatic();
 
             this.attackerContexts = new List<Context> { 0 };
             this.defenderContexts = new List<Context>();
@@ -57,7 +40,8 @@ namespace Assistance
             this.conditions = new List<TIMissionCondition>
             {
                 new TIMissionCondition_TargetInRange(),
-                new TIMissionCondition_CouncilorOnEarth()
+                new TIMissionCondition_CouncilorOnEarth(),
+                new TIMissionCondition_MyFactionCouncilor()
             };
 
             this.movementRule = (MissionMovementRule)1;
