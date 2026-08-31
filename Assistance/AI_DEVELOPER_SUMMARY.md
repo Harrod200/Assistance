@@ -12,6 +12,25 @@
 
 **IMPORTANT:** Every commit to this project must follow these steps:
 
+### Consent Protocol ⚠️
+**Before making ANY changes to the solution:**
+1. **Describe** the proposed changes clearly
+2. **Wait for explicit approval** from the project maintainer
+3. **Only proceed** after receiving consent (e.g., "yes", "proceed", "approved")
+4. **Report results** with a summary of what was changed
+
+**This protocol applies to:**
+- ✅ Source code modifications (`.cs` files)
+- ✅ Project configuration (`.csproj`)
+- ✅ Localization files (`.en`)
+- ✅ Documentation updates (`.md`)
+- ✅ Assembly info or version changes
+- ✅ Any file additions, deletions, or edits
+
+**Purpose:** Ensures all modifications are intentional and aligned with project goals.
+
+---
+
 ### Before Committing
 1. **Increment the version number** in `Properties/AssemblyInfo.cs`:
    ```csharp
