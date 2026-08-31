@@ -113,6 +113,39 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 ---
 
+## 🐛 Debugging & Troubleshooting
+
+### Game Log Location
+The primary log file for Terra Invicta is located at:
+```
+C:\Users\{Username}\AppData\LocalLow\Pavonis Interactive\TerraInvicta\Player.log
+```
+
+**Key things to check in the log:**
+- Search for `"Assist"` to find mod-related messages
+- Look for `"KeyNotFoundException"` or `"NullReferenceException"` if the game crashes
+- Check for `"Assist mission registered"` to verify mod loaded successfully
+- Bootstrap logging will show mission property details if enabled
+
+### Mod Loading
+The mod uses UMM (UnityModManager) to load. Check for:
+- Mod is placed in `Mods/Enabled/AssistMission/` folder
+- `Assistance.dll` and `English.xml` are present
+- `ModInfo.json` is properly formatted
+- No conflicts with other mods that modify missions
+
+### Common Issues & Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Mission doesn't appear | Mod didn't load or mission wasn't registered | Check `Player.log` for load errors; verify UMM is active |
+| Game crashes when using Assist | v0.3.0 issue (fixed in v0.3.1) | Update to v0.3.1+ which fixed AI planner crash |
+| AI cannot use Assist (v0.3.2+) | By design - player-only mission | This is intended behavior; AI is restricted |
+| Bonus not applied | Effect didn't run or assist % is 0% | Check settings; verify mission succeeded |
+| Bonus doesn't disappear | Bonus removal patch didn't trigger | Check that target councilor completes next mission |
+
+---
+
 ## 📁 Project Structure
 
 ```
