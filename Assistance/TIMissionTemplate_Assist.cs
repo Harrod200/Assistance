@@ -33,14 +33,13 @@ namespace Assistance
                 this.allowedForAutoDefense = true; // Match Inspire
 
                 // Use Contested resolution (required for UI to work properly)
-                // Must use TIMissionModifier_CouncilorAttackStat for AI planning to work
                 this.resolutionMethod = new TIMissionResolution_Contested
                 {
                     attackingModifiers = new List<TIMissionModifier>
                     {
-                        new TIMissionModifier_CouncilorAttackStat
+                        new TIMissionModifier_FlatModifier
                         {
-                            attackerAttribute = CouncilorAttribute.Persuasion
+                            flatModifier = 0
                         }
                     },
                     defendingModifiers = new List<TIMissionModifier>

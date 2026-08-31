@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.3.7  
-**Last Updated:** 2026-09-05  
+**Version:** 0.3.8  
+**Last Updated:** 2026-09-06  
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+
@@ -131,7 +131,8 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.3.7 | 2026-09-05 | **CURRENT** - Fixed critical condition return value bug preventing valid targets from being found. Created custom TIMissionCondition_MyFactionCouncilor implementation to replace vanilla. Fixed both custom conditions to return plain "_Pass"/"_Fail" constants instead of "ClassName_Pass"/"ClassName_Fail". Mission targeting now correctly validates all conditions and displays valid targets. |
+| 0.3.8 | 2026-09-06 | **CURRENT** - Fixed localization file naming from English.en to TIMissionTemplate.en (language code, not file extension). Removed Persuasion stat check - replaced CouncilorAttackStat modifier with neutral FlatModifier(0). Added comprehensive assumptions section documenting condition return values, localization format, context lists, and modifier requirements. Localization now properly integrated. |
+| 0.3.7 | 2026-09-05 | Fixed critical condition return value bug preventing valid targets from being found. Created custom TIMissionCondition_MyFactionCouncilor implementation to replace vanilla. Fixed both custom conditions to return plain "_Pass"/"_Fail" constants instead of "ClassName_Pass"/"ClassName_Fail". Mission targeting now correctly validates all conditions and displays valid targets. |
 | 0.3.6 | 2026-09-04 | Fixed "no valid targets" error by removing overly restrictive mission conditions. Removed TargetInRange, Human, and FreeCouncilor conditions. Now only requires: MyFactionCouncilor (same faction) and PlayerFactionOnly (player-controlled faction). Allows targeting ANY councilor in player faction regardless of location or mission status. |
 | 0.3.5 | 2026-09-04 | Removed broken Harmony patch TIMissionTemplate_CanUseTemplatePatch that targeted non-existent method. Mission loads cleanly without patch errors. TIMissionCondition_PlayerFactionOnly condition properly prevents AI usage via game's native condition evaluation. Mod loading verified in game log: "Assist mission registered. Grants: councilorTypes=26". |
 | 0.3.4 | 2026-09-04 | Fixed persistent AICouncilorMissionPlanner KeyNotFoundException crash. Removed ineffective Harmony patch on non-existent method. Created TIMissionTemplate_CanUseTemplatePatch to intercept CanUseTemplate() for Assist mission. Now blocks Assist mission for AI factions before evaluation, preventing dictionary lookup errors. Simplified modifiers (removed ResourceSpent). |
@@ -328,6 +329,37 @@ AssistBonusTracker.RemoveExpiredBonuses(completedCouncilor);
 
 ---
 
+## 💡 Key Assumptions
+
+These assumptions were validated through implementation and testing:
+
+### 1. Condition Return Value Format
+- **Assumption:** Conditions must return plain `TIMissionCondition.pass` / `TIMissionCondition.fail` constants (which equal "_Pass" / "_Fail")
+- **Evidence:** Target validation system uses `All()` LINQ to check if ALL condition results equal "_Pass"
+- **Impact:** Returning "ClassName_Pass" format breaks target filtering and causes "no valid targets" error
+
+### 2. Localization File Naming Convention
+- **Assumption:** Localization files are named `TIMissionTemplate.<languagecode>` (e.g., `.en` for English, not `.xml`)
+- **Evidence:** More Realistic Nukes mod uses `TIMissionTemplate.en` format; XML localization does not work
+- **Impact:** Using incorrect format (English.xml) prevents localization strings from appearing in-game
+
+### 3. Custom Condition Implementation Required
+- **Assumption:** Using vanilla `TIMissionCondition_MyFactionCouncilor` as a class reference requires a custom implementation to be included
+- **Evidence:** Vanilla class exists but needs explicit custom implementation to work reliably with custom missions
+- **Impact:** Creating a custom TIMissionCondition_MyFactionCouncilor class ensures consistent behavior
+
+### 4. Modifiers for Contested Resolution
+- **Assumption:** Contested resolution requires modifiers in both attacking and defending lists (cannot be empty or null)
+- **Evidence:** AI mission planner iterates through modifiers; missing modifiers cause crashes
+- **Impact:** Using neutral FlatModifier(0) is safe and doesn't affect mission mechanics
+
+### 5. Empty Context Lists for Custom Missions
+- **Assumption:** Custom mission templates should use empty context lists rather than {Context.None} or specific contexts
+- **Evidence:** Vanilla missions with simple resolution use empty lists; non-empty lists cause AI planner issues
+- **Impact:** Empty lists prevent dictionary lookup errors in mission planning
+
+---
+
 ## ⚠️ Critical Decisions & Tradeoffs
 
 ### 1. Free Mission (vs. Cost)
@@ -345,10 +377,11 @@ AssistBonusTracker.RemoveExpiredBonuses(completedCouncilor);
 - **Rationale:** Prevents permanent stat inflation
 - **Tradeoff:** Bonuses only last 1-3 days depending on mission duration
 
-### 4. Contested Resolution with CouncilorAttackStat
-- **Decision:** Use Contested resolution with TIMissionModifier_CouncilorAttackStat(Persuasion)
-- **Rationale:** AI planner requires specific modifier type; Persuasion matches support mission theme
-- **Tradeoff:** Modifier displays as Persuasion in UI (cosmetic)
+### 4. Neutral Modifiers (Removed Persuasion Check)
+- **Decision:** Use neutral FlatModifier(0) instead of CouncilorAttackStat(Persuasion)
+- **Rationale:** Mission doesn't need to tie to any specific stat; neutral modifier avoids unwanted UI displays
+- **Tradeoff:** Removes the Persuasion association that was cosmetic anyway
+- **Update (v0.3.8):** Changed from CouncilorAttackStat to FlatModifier for cleaner implementation
 
 ---
 

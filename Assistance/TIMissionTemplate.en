@@ -1,0 +1,6 @@
+TIMissionTemplate_Assist.displayName.Assist=Assist Councilor
+TIMissionTemplate_Assist.description.Assist=Grant a percentage of your stats to help another councilor. The bonus is temporary and will disappear when they complete their next mission.
+TIMissionTemplate.Success.Assist=I successfully provided assistance to {targetDisplayName}, granting them temporary stat bonuses.
+TIMissionTemplate.Failure.Assist=I failed to establish an assist connection with {targetDisplayName}.
+TIMissionCondition_MyFactionCouncilor=Target must be a councilor from your faction.
+TIMissionCondition_PlayerFactionOnly=This mission can only be used by player-controlled factions.
