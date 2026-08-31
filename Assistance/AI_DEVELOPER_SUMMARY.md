@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.4.1  
-**Last Updated:** 2026-09-09
+**Version:** 0.4.2  
+**Last Updated:** 2026-09-10
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+
@@ -153,7 +153,8 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.4.1 | 2026-09-09 | **CURRENT** - Fixed mission filtering logic and player control detection. Corrected TICouncilorState_GetPossibleMissionListPatch to use faction.player.isAI instead of outdated playerControl check. Re-enabled GrantToAllCouncilors() to grant mission to councilor types. Discovered Lesson #8: Mission Registration vs Availability lifecycle. Created comprehensive CODE_REFERENCE.md documentation. Mission now functional with proper AI filtering. |
+| 0.4.2 | 2026-09-10 | **CURRENT** - Removed verbose debug logging from TICouncilorState_GetPossibleMissionListPatch to reduce log spam. Simplified filtering logic while maintaining core functionality. Mission still properly filtered from AI faction councilors. |
+| 0.4.1 | 2026-09-09 | Fixed mission filtering logic and player control detection. Corrected TICouncilorState_GetPossibleMissionListPatch to use faction.player.isAI instead of outdated playerControl check. Re-enabled GrantToAllCouncilors() to grant mission to councilor types. Discovered Lesson #8: Mission Registration vs Availability lifecycle. Created comprehensive CODE_REFERENCE.md documentation. Mission now functional with proper AI filtering. |
 | 0.4.0 | 2026-09-09 | Fixed compiler warning CS0108 in TIMissionModifier_AssistStat. Added 'new' keyword to attackerAttribute field override to explicitly indicate intentional field shadowing. Game loads and runs successfully with no warnings or errors. Clean build achieved. |
 | 0.3.12 | 2026-09-08 | Fixed persistent KeyNotFoundException crash in AI mission planner. Initial approach (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch targeting non-existent method) was incorrect. Root cause: Assist mission added to ALL councilor types, but AI planner evaluates modifiers before checking conditions, causing crash on empty modifier lists. Solution: Created TIFactionState_GetAllPossibleMissionsPatch to filter Assist mission from AI factions at mission retrieval stage (before evaluation). This prevents AI planner from ever seeing the mission. Player factions unaffected. |
 | 0.3.11 | 2026-09-08 | Attempted to fix KeyNotFoundException by removing non-functional Harmony patch (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch) that targeted method "GetMissionsForCouncilor" which doesn't exist in game assembly. Removed patch file and updated version, but crash persisted - investigation revealed mission conditions alone insufficient. |

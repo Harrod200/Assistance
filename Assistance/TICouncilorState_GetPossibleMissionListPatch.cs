@@ -33,53 +33,19 @@ namespace Assistance
 
             try
             {
-                // Log every call for debugging
-                if (Main.mod != null)
-                {
-                    string controlStatus = "UNKNOWN";
-                    if (__instance != null && __instance.faction != null && __instance.faction.player != null)
-                    {
-                        controlStatus = __instance.faction.player.isAI ? "AI" : "PLAYER";
-                    }
-
-                    // Check if Assist is in the list
-                    bool hasAssist = __result != null && __result.Exists(m => m != null && m.dataName == "Assist");
-                    Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Called for councilor '{0}', faction control={1}, result missions={2}, hasAssist={3}", 
-                        __instance != null ? __instance.displayName : "NULL",
-                        controlStatus,
-                        __result.Count,
-                        hasAssist));
-                }
-
                 // Only filter for AI factions
                 // AI-controlled factions have faction.player.isAI == true
                 if (__instance == null || __instance.faction == null || __instance.faction.player == null || !__instance.faction.player.isAI)
                 {
-                    if (Main.mod != null && __result != null)
-                    {
-                        bool hasAssist = __result.Exists(m => m != null && m.dataName == "Assist");
-                        if (hasAssist)
-                        {
-                            Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Keeping Assist for PLAYER faction councilor '{0}'", __instance.displayName));
-                        }
-                    }
                     return;
                 }
 
                 // Remove Assist mission from AI councilor's possible missions
-                int removedCount = __result.RemoveAll(mission => mission != null && mission.dataName == "Assist");
-
-                if (removedCount > 0 && Main.mod != null)
-                {
-                    Main.mod.Logger.Log(string.Format("[TICouncilorState_GetPossibleMissionListPatch] FILTERED Assist from AI councilor '{0}' in faction '{1}' ({2} mission(s) removed)", __instance.displayName, __instance.faction.displayName, removedCount));
-                }
+                __result.RemoveAll(mission => mission != null && mission.dataName == "Assist");
             }
-            catch (Exception ex)
+            catch
             {
-                if (Main.mod != null)
-                {
-                    Main.mod.Logger.Error(string.Format("[TICouncilorState_GetPossibleMissionListPatch] Error: {0}\n{1}", ex.Message, ex.StackTrace));
-                }
+                // Silently fail to avoid spam
             }
         }
     }

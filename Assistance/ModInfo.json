@@ -1,0 +1,21 @@
+{
+  "title": "Councilor Assist Mission",
+  "author": "Chris",
+  "description": "Adds an Assist Mission that allows one councilor to share a percentage (0-100%, configurable) of their stats with another councilor. Bonuses are temporary and disappear when the assisted councilor completes their next mission.",
+  "LoadOrder": 1200,
+  "TemplatesToConcatArrays": [],
+  "TemplatesToReplaceArrays": [],
+  "TemplatesToReplace": [],
+  "Id": "AssistMission",
+  "DisplayName": "Councilor Assist Mission",
+  "Author": "Chris",
+  "Version": "0.4.2",
+  "ManagerVersion": "0.33.0.0",
+  "GameVersion": "1.0.38",
+  "Requirements": [],
+  "LoadAfter": [],
+  "AssemblyName": "Assistance.dll",
+  "EntryMethod": "Assistance.Main.Load"
+}
+
+
