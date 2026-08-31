@@ -282,11 +282,13 @@ Assistance/                                 [Solution Root]
 - **What Happened:** v0.3.10 (broken approach), v0.3.11 (incomplete fix), v0.3.12 (correct fix). Having each documented helped understand the problem evolution
 - **Takeaway:** Always document failed attempts in version history with specific reasons - it prevents re-trying the same broken approach
 
-### 7. **PlayerControl Property Behavior is More Complex Than Expected**
-- **Lesson:** `councilor.faction.playerControl != null` is NOT a reliable check for player-controlled factions - it appears to be non-null for ALL councilors, including those in AI-controlled factions
-- **Discovery:** Testing revealed that `playerControl` is populated regardless of whether a faction is player or AI controlled. The actual property/method to distinguish player vs AI control requires further investigation
-- **Current Status:** The `TIMissionCondition_PlayerFactionOnly` condition is currently implemented using this check, but its actual effectiveness in preventing AI usage needs verification
-- **Takeaway:** Property semantics in complex game engines can be unintuitive. Always validate assumptions through testing rather than relying on property names or initial understanding
+### 7. **PlayerControl Property Semantics Clarified**
+- **Lesson:** `faction.playerControl` returns a Player component for ALL factions (both player and AI), but the Player component has an `isAI` property that indicates actual control
+- **Discovery:** Initial assumption that `playerControl != null` distinguishes player vs AI was incorrect. The correct check is `faction.player.isAI` (game uses `faction.player`, not `faction.playerControl`)
+- **Root Cause:** `playerControl` is a cached reference to the Player component. It's non-null for all factions. The distinction is made via `TIPlayerState.isAI` property
+- **Solution:** Updated `TIMissionCondition_PlayerFactionOnly` to check `!faction.player.isAI` instead of `faction.playerControl != null`
+- **Decompiled Evidence:** Game's own `TIFactionCondition_bAIControlled` condition uses exactly this pattern: `state.ref_faction.player.isAI`
+- **Takeaway:** Always examine decompiled game code for similar conditions to understand the correct pattern
 
 ---
 
@@ -318,10 +320,10 @@ this.conditions = new List<TIMissionCondition>
 - No restrictions on mission status (can target councilors already on other missions)
 - No restrictions on detention status (can target detained councilors)
 - The `PlayerFactionOnly` condition (v0.3.2+) **restricts this mission to player factions only** - AI players cannot use it
-  - Currently implemented as `councilor.faction.playerControl != null`
-  - **ISSUE DISCOVERED (v0.4.0+):** playerControl appears to be non-null for ALL councilors including AI-controlled factions
-  - This suggests the condition may not be working as intended, or `playerControl` represents something other than player control status
-  - Further investigation needed to determine actual check for player vs AI faction control
+  - Currently implemented as: `if (councilor.faction.player != null && councilor.faction.player.isAI) return fail;`
+  - Checks the `isAI` property of the faction's associated `TIPlayerState` object
+  - Matches the game's own `TIFactionCondition_bAIControlled` pattern for detecting AI-controlled factions
+  - This prevents AI players from using the Assist mission
 
 > **Note:** Earlier versions (v0.3.5 and prior) included `TIMissionCondition_FreeCouncilor()`, which does NOT mean "councilors with no mission". It specifically refers to **councilors who are not imprisoned/detained**. This condition was removed in v0.3.6 to allow targeting of detained councilors.
 

@@ -15,11 +15,11 @@ namespace Assistance
                 return TIMissionCondition.fail;
 
             // Only allow player-controlled factions
-            // playerControl returns null for AI factions, non-null for player factions
-            if (councilor.faction.playerControl != null)
-                return TIMissionCondition.pass;
-            else
+            // Check if faction's player is AI. If it is AI, return fail; if it's player-controlled, return pass
+            if (councilor.faction.player != null && councilor.faction.player.isAI)
                 return TIMissionCondition.fail;
+            else
+                return TIMissionCondition.pass;
         }
     }
 }
