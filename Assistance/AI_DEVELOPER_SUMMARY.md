@@ -282,11 +282,11 @@ Assistance/                                 [Solution Root]
 - **What Happened:** v0.3.10 (broken approach), v0.3.11 (incomplete fix), v0.3.12 (correct fix). Having each documented helped understand the problem evolution
 - **Takeaway:** Always document failed attempts in version history with specific reasons - it prevents re-trying the same broken approach
 
-### 7. **PlayerControl Property Does NOT Indicate Councilor Ownership**
-- **Lesson:** `councilor.faction.playerControl != null` checks if a FACTION is player-controlled, NOT if a councilor belongs to the player
-- **Important Distinction:** `faction.playerControl` is the faction's player controller reference (human vs AI), but a single player faction can contain councilors from MULTIPLE different factions/origins through diplomacy and faction merging
-- **Practical Impact:** Using `playerControl` to check mission availability correctly prevents AI factions from using the Assist mission, but it doesn't restrict by councilor ownership or affiliation
-- **Takeaway:** Always understand what a property actually represents before using it for game logic; property names can be misleading
+### 7. **PlayerControl Property Behavior is More Complex Than Expected**
+- **Lesson:** `councilor.faction.playerControl != null` is NOT a reliable check for player-controlled factions - it appears to be non-null for ALL councilors, including those in AI-controlled factions
+- **Discovery:** Testing revealed that `playerControl` is populated regardless of whether a faction is player or AI controlled. The actual property/method to distinguish player vs AI control requires further investigation
+- **Current Status:** The `TIMissionCondition_PlayerFactionOnly` condition is currently implemented using this check, but its actual effectiveness in preventing AI usage needs verification
+- **Takeaway:** Property semantics in complex game engines can be unintuitive. Always validate assumptions through testing rather than relying on property names or initial understanding
 
 ---
 
@@ -318,9 +318,10 @@ this.conditions = new List<TIMissionCondition>
 - No restrictions on mission status (can target councilors already on other missions)
 - No restrictions on detention status (can target detained councilors)
 - The `PlayerFactionOnly` condition (v0.3.2+) **restricts this mission to player factions only** - AI players cannot use it
-  - Checks if `councilor.faction.playerControl != null`
-  - If null, faction is AI-controlled and mission is disabled
-  - This prevents AI players from "gaming" the assist mechanic
+  - Currently implemented as `councilor.faction.playerControl != null`
+  - **ISSUE DISCOVERED (v0.4.0+):** playerControl appears to be non-null for ALL councilors including AI-controlled factions
+  - This suggests the condition may not be working as intended, or `playerControl` represents something other than player control status
+  - Further investigation needed to determine actual check for player vs AI faction control
 
 > **Note:** Earlier versions (v0.3.5 and prior) included `TIMissionCondition_FreeCouncilor()`, which does NOT mean "councilors with no mission". It specifically refers to **councilors who are not imprisoned/detained**. This condition was removed in v0.3.6 to allow targeting of detained councilors.
 
