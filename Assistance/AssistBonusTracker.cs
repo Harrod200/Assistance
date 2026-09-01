@@ -52,20 +52,17 @@ namespace Assistance
         }
 
         /// <summary>
-        /// Gets the total assist bonus amount for a councilor (used for control point cap exclusion)
+        /// Gets the assist bonus for a specific stat (used for control point cap exclusion)
         /// </summary>
-        public static int GetCouncilorBonusAmount(TICouncilorState councilor)
+        public static int GetStatBonus(TICouncilorState councilor, CouncilorAttribute stat)
         {
-            if (councilor == null || !totalBonusAmounts.ContainsKey(councilor))
+            if (councilor == null || !trackedBonuses.ContainsKey(councilor))
                 return 0;
 
-            int bonus = totalBonusAmounts[councilor];
-            if (Main.mod != null && bonus > 0)
-            {
-                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetCouncilorBonusAmount for '{0}': {1}", 
-                    councilor.displayName, bonus));
-            }
-            return bonus;
+            if (!trackedBonuses[councilor].ContainsKey(stat))
+                return 0;
+
+            return trackedBonuses[councilor][stat];
         }
 
         /// <summary>
