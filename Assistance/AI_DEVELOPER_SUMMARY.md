@@ -159,6 +159,9 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 - ✅ Bonuses automatically disappear when target completes their next mission
 - ✅ Resolves immediately (resolutionOrder = 0, resolves first each turn)
 - ✅ English localization included
+- ✅ Optional debug logging toggle (disabled by default, toggleable in UMM settings)
+- ✅ Control point cap adjustment via faction-level Harmony patch
+- ✅ Comprehensive error handling and exception logging
 
 ---
 
@@ -1255,4 +1258,98 @@ Good luck! 🚀
 - CODE_CLEANUP_REVIEW.md - Additional cleanup opportunities for future versions
 - TESTING_GUIDE.md - Comprehensive testing methodology
 - LOG_ANALYSIS.md - Example log analysis from v0.5.0 testing
+- VO_ERROR_FIX.md - Voice-over event error analysis and solution
+
+---
+
+## 🔍 v0.5.4 Debug Logging Reference
+
+### Overview
+Version 0.5.4 adds optional debug logging with a user-configurable toggle in UMM settings. Debug logging is **disabled by default** to keep logs clean for normal gameplay.
+
+### Enabling Debug Logging
+1. Open Terra Invicta game
+2. Open UMM settings for Assistance Mod
+3. Toggle "Enable Debug Logging" ON
+4. Changes saved automatically
+
+### Debug Log Messages
+
+**Control Point Capacity Patch Logging** (when enabled):
+
+```
+[CP_CAP_PATCH_PREFIX] GetControlPointMaintenanceFreebieCap() called for faction 'Project Exodus' (IsAlien=False)
+[CP_CAP_PATCH_POSTFIX] Faction 'Project Exodus': Original Cap=385, Assist Bonus Adjustment=-55, Adjusted Cap=330
+[CP_CAP_PATCH_POSTFIX] Faction 'the Academy': No assist bonuses to adjust. Cap=305
+```
+
+**Bonus Tracking Logging**:
+
+```
+[AssistBonusTracker] Recorded bonus for 'Blake Rowland': Administration +14, Total=45
+[AssistBonusTracker] Recorded bonus for 'Blake Rowland': Science +6, Total=51
+[AssistBonusTracker] Recorded bonus for 'Blake Rowland': Security +3, Total=54
+[AssistMission] Removed bonuses for 'Evandro Semerawno' on mission complete
+```
+
+### What the Prefix Patch Does
+
+The **Prefix patch** on `TIFactionState.GetControlPointMaintenanceFreebieCap()` logs every call to the vanilla method, showing:
+- Faction name
+- Whether faction is alien (should be filtered)
+- Entry point timestamp
+
+This allows you to trace the control point cap calculation flow for troubleshooting.
+
+### What the Postfix Patch Does
+
+The **Postfix patch** (conditional on debug flag) logs:
+- Original calculated cap value
+- Total assist bonus amount being subtracted
+- Final adjusted cap value
+- Handles cases where no bonuses exist
+
+### Performance Impact
+
+- **Debug OFF (default):** Minimal - no logging overhead
+- **Debug ON:** 1-2 additional log entries per faction per turn (~50-100 bytes/log)
+  - Acceptable for debugging but not recommended for long-term play
+  - Disable after troubleshooting to reduce log file size
+
+### Common Debug Scenarios
+
+**Scenario 1: Verify Bonuses Applied**
+```
+Enable debug logging
+Assign Assist mission to councilor
+Check logs for:
+  [AssistBonusTracker] Recorded bonus for...
+  [CP_CAP_PATCH_POSTFIX] ... Assist Bonus Adjustment=...
+```
+
+**Scenario 2: Verify Bonuses Removed**
+```
+Enable debug logging
+Have assisted councilor complete any mission
+Check logs for:
+  [AssistMission] Removed bonuses for ... on mission complete
+  [CP_CAP_PATCH_POSTFIX] Faction 'X': No assist bonuses to adjust. Cap=...
+```
+
+**Scenario 3: Track CP Cap Changes**
+```
+Enable debug logging
+Play several turns
+Search logs for [CP_CAP_PATCH_POSTFIX]
+Compare Original Cap vs Adjusted Cap values
+Should show reduction equal to assist bonus amounts
+```
+
+### Disabling Debug Logging
+
+1. Open UMM settings for Assistance Mod
+2. Toggle "Enable Debug Logging" OFF
+3. Changes saved automatically
+4. Next log file will have no debug messages
+
 
