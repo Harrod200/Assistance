@@ -22,7 +22,7 @@ namespace Assistance
                 // Remove any temporary assist bonuses this councilor received
                 AssistBonusTracker.RemoveBonuses(__instance);
 
-                if (Main.mod != null)
+                if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log(string.Format("[AssistMission] Removed bonuses for '{0}' on mission complete", 
                         __instance.displayName));

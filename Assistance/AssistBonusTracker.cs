@@ -44,7 +44,7 @@ namespace Assistance
             }
             totalBonusAmounts[councilor] += amount;
 
-            if (Main.mod != null)
+            if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Recorded bonus for '{0}': {1} +{2}, Total={3}", 
                     councilor.displayName, stat.ToString(), amount, totalBonusAmounts[councilor]));
