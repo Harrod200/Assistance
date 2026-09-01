@@ -17,16 +17,7 @@ namespace Assistance
             // Only allow player-controlled factions
             // Check if faction's player is AI. If it is AI, return fail; if it's player-controlled, return pass
             bool isAI = councilor.faction.player != null && councilor.faction.player.isAI;
-            string result = isAI ? TIMissionCondition.fail : TIMissionCondition.pass;
-
-            // Log for debugging
-            if (Main.mod != null)
-            {
-                Main.mod.Logger.Log(string.Format("[TIMissionCondition_PlayerFactionOnly] Checking councilor '{0}' in faction '{1}' (isAI={2}) -> {3}", 
-                    councilor.displayName, councilor.faction.displayName, isAI, result));
-            }
-
-            return result;
+            return isAI ? TIMissionCondition.fail : TIMissionCondition.pass;
         }
     }
 }

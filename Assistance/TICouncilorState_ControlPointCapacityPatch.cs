@@ -24,7 +24,7 @@ namespace Assistance
     {
         public static void Postfix(TICouncilorState __instance, ref int __result)
         {
-            if (!Main.enabled || __instance == null)
+            if (!Main.enabled || __instance == null || Main.mod == null)
             {
                 return;
             }
@@ -36,22 +36,16 @@ namespace Assistance
 
                 if (assistBonus > 0)
                 {
-                    if (Main.mod != null)
-                    {
-                        Main.mod.Logger.Log(string.Format("[TICouncilorState_ControlPointCapacityPatch] Councilor '{0}': Original CP={1}, Assist Bonus={2}, Adjusted CP={3}", 
-                            __instance.displayName, __result, assistBonus, Math.Max(0, __result - assistBonus)));
-                    }
-
                     // Subtract assist bonus from control point capacity
-                    __result = Math.Max(0, __result - assistBonus);
+                    int adjustedCap = Math.Max(0, __result - assistBonus);
+                    Main.mod.Logger.Log(string.Format("[TICouncilorState_ControlPointCapacityPatch] Councilor '{0}': Original CP={1}, Assist Bonus={2}, Adjusted CP={3}", 
+                        __instance.displayName, __result, assistBonus, adjustedCap));
+                    __result = adjustedCap;
                 }
             }
             catch (Exception ex)
             {
-                if (Main.mod != null)
-                {
-                    Main.mod.Logger.Error("[TICouncilorState_ControlPointCapacityPatch] Error: " + ex.Message);
-                }
+                Main.mod.Logger.Error("[TICouncilorState_ControlPointCapacityPatch] Error: " + ex.Message);
             }
         }
     }
