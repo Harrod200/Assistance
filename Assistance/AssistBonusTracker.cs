@@ -94,6 +94,39 @@ namespace Assistance
         }
 
         /// <summary>
+        /// Gets the total CP adjustment for a faction (sum of all CP-affecting bonuses for all councilors in that faction)
+        /// Used by faction-level GetControlPointMaintenanceFreebieCap patch to apply flat adjustment
+        /// </summary>
+        public static int GetFactionCPAdjustment(TIFactionState faction)
+        {
+            if (faction == null)
+                return 0;
+
+            int totalAdjustment = 0;
+
+            // Sum all CP-affecting bonuses for councilors in this faction
+            foreach (var kvp in totalBonusAmounts)
+            {
+                TICouncilorState councilor = kvp.Key;
+                int totalBonus = kvp.Value;
+
+                // Only count bonuses for councilors in this faction
+                if (councilor != null && councilor.faction == faction)
+                {
+                    // Calculate CP impact: only Persuasion, Command, Administration affect CP
+                    int persuasionBonus = GetStatBonus(councilor, CouncilorAttribute.Persuasion);
+                    int commandBonus = GetStatBonus(councilor, CouncilorAttribute.Command);
+                    int administrationBonus = GetStatBonus(councilor, CouncilorAttribute.Administration);
+
+                    int cpBonus = persuasionBonus + commandBonus + administrationBonus;
+                    totalAdjustment += cpBonus;
+                }
+            }
+
+            return totalAdjustment;
+        }
+
+        /// <summary>
         /// Clears all tracked bonuses (for mod reload/unload)
         /// </summary>
         public static void ClearAll()

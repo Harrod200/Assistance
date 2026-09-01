@@ -6,6 +6,7 @@ namespace Assistance
     {
         public float assistPercentage = 25f;
         public bool enableAssistMission = true;
+        public bool debugLogging = true;
 
         public override void Save(UnityModManager.ModEntry modEntry)
         {

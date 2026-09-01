@@ -1,7 +1,7 @@
 # Assistance Mod - AI Developer Handoff Summary
 
-**Version:** 0.5.0  
-**Last Updated:** 2026-09-10
+**Version:** 0.5.3  
+**Last Updated:** 2026-09-12
 **Status:** ✅ Stable and Tested  
 **Target Game:** Terra Invicta 1.0.53+  
 **UMM Version:** 0.33.0.0+
@@ -42,7 +42,14 @@
    - MINOR: New features or significant fixes
    - PATCH: Bug fixes, small improvements, documentation updates
 
-2. **Update this developer summary**:
+2. **Increment version in `modinfo.json`**:
+   ```json
+   "Version": "X.Y.Z"
+   ```
+   - Must match the version in `AssemblyInfo.cs`
+   - Ensures the game mod manager displays the correct version
+
+3. **Update this developer summary**:
    - Update the **Version** at the top to match `AssemblyInfo.cs`
    - Update the **Last Updated** date (format: YYYY-MM-DD)
    - Add new row to **Version History** table at the top:
@@ -52,23 +59,24 @@
    - Ensure CURRENT marker is on the latest version
    - Update any relevant sections (Project Structure, Critical Details, Known Issues, etc.)
 
-3. **Build and test** the solution to ensure no compilation errors:
+4. **Build and test** the solution to ensure no compilation errors:
    ```powershell
    dotnet build Assistance/Assistance.csproj
    ```
 
-4. **Copy to game folder** when ready for testing:
+5. **Copy to game folder** when ready for testing:
    ```powershell
    Copy-Item "Assistance\bin\Debug\Assistance.dll" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
+   Copy-Item "Assistance\modinfo.json" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
    ```
 
 ### Committing
-5. **Stage changes**:
+6. **Stage changes**:
    ```powershell
    git add -A
    ```
 
-6. **Commit with semantic message**:
+7. **Commit with semantic message**:
    ```powershell
    git commit -m "feat/fix/docs: Brief description
 
@@ -80,7 +88,7 @@
    - Include detailed changelog in body
    - Reference version number in commit body if significant
 
-7. **Push to master**:
+8. **Push to master**:
    ```powershell
    git push origin master
    ```
@@ -89,19 +97,21 @@
 ```powershell
 # 1. Make code changes
 # 2. Update AssemblyInfo.cs version from 0.3.1 to 0.3.2
-# 3. Update AI_DEVELOPER_SUMMARY.md:
+# 3. Update modinfo.json version from 0.3.1 to 0.3.2
+# 4. Update AI_DEVELOPER_SUMMARY.md:
 #    - Change Version: 0.3.1 → 0.3.2
 #    - Change Last Updated: 2026-09-02 → 2026-09-03
 #    - Add row to Version History table
 #    - Update relevant documentation sections
-# 4. Build
+# 5. Build
 cd "C:\Users\Chris\source\repos\Assistance"
 dotnet build Assistance/Assistance.csproj
 
-# 5. Copy to game folder for testing
+# 6. Copy to game folder for testing
 Copy-Item "Assistance\bin\Debug\Assistance.dll" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
+Copy-Item "Assistance\modinfo.json" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
 
-# 6. Git operations
+# 7. Git operations
 git add -A
 git commit -m "fix: Resolve issue with bonus calculation
 
@@ -121,6 +131,9 @@ dotnet build Assistance/Assistance.csproj
 
 # Copy DLL to game folder when ready for testing
 Copy-Item "Assistance\bin\Debug\Assistance.dll" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
+
+# Copy modinfo.json to game folder (keeps mod version in sync)
+Copy-Item "Assistance\modinfo.json" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
 
 # Copy localization file (TIMissionTemplate.en - correct naming convention per v0.3.8)
 Copy-Item "Assistance\TIMissionTemplate.en" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\" -Force
@@ -153,7 +166,10 @@ The **Assistance Mod** adds an "Assist Councilor" mission to Terra Invicta that 
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 0.5.0 | 2026-09-10 | **CURRENT** - Implemented control point cap bonus exclusion with reflection-based Harmony patching. Initial attempt using [HarmonyPatch] attribute on property getter failed to intercept correctly. Switched to [HarmonyPatch] with custom TargetMethod() that uses reflection to locate controlPointCapacity property getter at runtime. Updated AssistBonusTracker with GetStatBonus() method for per-stat bonus tracking (more accurate than total). Patch now calculates CP-bonus as sum of only CP-affecting stats (Persuasion, Command, Administration) and subtracts from controlPointCapacity. Ensures temporary bonuses don't inflate faction control point maintenance capacity. Removed excessive logging from TIMissionCondition_PlayerFactionOnly (was causing 25+ repeated log entries per turn). Created comprehensive testing guides: TESTING_GUIDE.md, LOG_REFERENCE.md, VERIFICATION_QUICK.md. Added LOG_ANALYSIS.md documenting bonus tracking works perfectly (45-80 point totals confirmed), CP patch interception fixed with reflection approach. |
+| 0.5.3 | 2026-09-12 | **CURRENT** - Added debug logging toggle to UMM settings (default enabled). New Settings.debugLogging boolean with GUI toggle in Main.OnGUI(). Updated TIFactionState_ControlPointMaintenanceCapPatch with Prefix patch to log vanilla method entry point details (faction name, alien flag). Postfix logging now conditional on debugLogging flag to reduce spam. Prefix logs every GetControlPointMaintenanceFreebieCap() call. Postfix logs adjustment details and zero-adjustment cases only when debug enabled. Enables detailed tracing of control point cap calculation flow for troubleshooting. All changes verified with successful build and deployed. |
+| 0.5.2 | 2026-09-11 | Refactored CP bonus subtraction from per-councilor to faction-level (Option B). Replaced TICouncilorState_ControlPointCapacityPatch with TIFactionState_ControlPointMaintenanceCapPatch. New patch targets GetControlPointMaintenanceFreebieCap() Postfix, applying flat adjustment AFTER all components (global freebies, AI bonus, councilor sum, hab sum, effects modifiers). This avoids per-councilor ledger display changes while ensuring faction CP maintenance reflects assist bonus impact. Added AssistBonusTracker.GetFactionCPAdjustment(faction) to sum CP-affecting bonuses across all faction councilors (Persuasion + Command + Administration only). Simplified TICouncilorState_CompleteMissionPatch: removed per-councilor CP capture/logging, just removes bonus from tracking. Faction-level patch handles recalculation automatically. Advantages: cleaner architecture, no double-counting risk, no activeCouncilors filtering interference, single focused injection point. All changes verified with successful build and deployed. |
+| 0.5.1 | 2026-09-11 | Simplified CP capacity patch to use cleaner attribute-based Harmony approach (removed reflection boilerplate). Refactored TICouncilorState_ControlPointCapacityPatch: replaced TargetMethod() reflection with direct [HarmonyPatch(typeof(TICouncilorState), "get_controlPointCapacity")] attribute declaration. Postfix logic unchanged and correct. Enhanced mission completion flow: TICouncilorState_CompleteMissionPatch now explicitly captures CP before/after bonus removal and logs restoration with [CP_UPDATE] messages, forcing recalculation of controlPointCapacity via property getter. Code cleanup: Removed 3 unused using statements (System, System.Text) from TIMissionModifier_AssistStat, TIMissionCondition_MyFactionCouncilor, TIMissionCondition_PlayerFactionOnly. Created CODE_CLEANUP_REVIEW.md documenting additional cleanup opportunities (bare catch blocks, defensive UI code) for future phases. All changes verified with successful build. |
+| 0.5.0 | 2026-09-10 | Implemented control point cap bonus exclusion with reflection-based Harmony patching. Initial attempt using [HarmonyPatch] attribute on property getter failed to intercept correctly. Switched to [HarmonyPatch] with custom TargetMethod() that uses reflection to locate controlPointCapacity property getter at runtime. Updated AssistBonusTracker with GetStatBonus() method for per-stat bonus tracking (more accurate than total). Patch now calculates CP-bonus as sum of only CP-affecting stats (Persuasion, Command, Administration) and subtracts from controlPointCapacity. Ensures temporary bonuses don't inflate faction control point maintenance capacity. Removed excessive logging from TIMissionCondition_PlayerFactionOnly (was causing 25+ repeated log entries per turn). Created comprehensive testing guides: TESTING_GUIDE.md, LOG_REFERENCE.md, VERIFICATION_QUICK.md. Added LOG_ANALYSIS.md documenting bonus tracking works perfectly (45-80 point totals confirmed), CP patch interception fixed with reflection approach. |
 | 0.4.2 | 2026-09-10 | Removed verbose debug logging from TICouncilorState_GetPossibleMissionListPatch to reduce log spam. Simplified filtering logic while maintaining core functionality. Mission still properly filtered from AI faction councilors. |
 | 0.4.0 | 2026-09-09 | Fixed compiler warning CS0108 in TIMissionModifier_AssistStat. Added 'new' keyword to attackerAttribute field override to explicitly indicate intentional field shadowing. Game loads and runs successfully with no warnings or errors. Clean build achieved. |
 | 0.3.12 | 2026-09-08 | Fixed persistent KeyNotFoundException crash in AI mission planner. Initial approach (AICouncilorMissionPlanner_GetMissionsForCouncilorPatch targeting non-existent method) was incorrect. Root cause: Assist mission added to ALL councilor types, but AI planner evaluates modifiers before checking conditions, causing crash on empty modifier lists. Solution: Created TIFactionState_GetAllPossibleMissionsPatch to filter Assist mission from AI factions at mission retrieval stage (before evaluation). This prevents AI planner from ever seeing the mission. Player factions unaffected. |
@@ -215,26 +231,154 @@ Assistance/                                 [Solution Root]
 │   ├── TIMissionEffect_Assist.cs                [Stat transfer logic during mission completion]
 │   ├── TIMissionModifier_AssistStat.cs          [Mission resolution modifier for contested resolution]
 │   ├── TIMissionModifier_AssistFlat.cs          [Placeholder flat modifier]
+│   ├── TIMissionCondition_MyFactionCouncilor.cs [Custom condition - target must be same faction, not self]
 │   ├── TIMissionCondition_PlayerFactionOnly.cs  [Custom condition to restrict mission to player factions]
-│   ├── AssistBonusTracker.cs                    [Tracks and removes bonuses after mission complete]
-│   ├── TICouncilorState_CompleteMissionPatch.cs [Harmony patch to trigger bonus removal]
-│   ├── CouncilorMissionCanvasController_UpdateModifierListPatch.cs [UI rendering patch]
+│   ├── AssistBonusTracker.cs                    [Tracks and removes bonuses after mission complete, faction-level adjustment]
+│   ├── TICouncilorState_CompleteMissionPatch.cs [Harmony patch - remove bonus from tracking on mission complete]
+│   ├── TIFactionState_ControlPointMaintenanceCapPatch.cs [⭐ NEW - Faction-level CP cap adjustment (v0.5.2)]
+│   ├── TICouncilorState_GetPossibleMissionListPatch.cs [Filter Assist mission from AI councilors]
+│   ├── CouncilorMissionCanvasController_UpdateModifierListPatch.cs [UI rendering patch for localization safety]
+│   ├── AssistMissionBootstrapPatch.cs           [Harmony bootstrap patch for mission registration]
 │   ├── Main.cs                                  [UMM entry point & GUI settings slider]
 │   ├── Settings.cs                              [Configuration storage]
-│   ├── AssistMissionBootstrapPatch.cs           [Harmony bootstrap patch for mission registration]
-│   ├── English.xml                              [Localization strings]
-│   ├── Properties/AssemblyInfo.cs               [Assembly version: 0.3.5]
-│   └── bin/Debug/Assistance.dll                 [Compiled mod, ~11 KB]
+│   ├── TIMissionTemplate.en                     [Localization strings (English)]
+│   ├── ModInfo.json                             [UMM mod metadata (v0.5.2)]
+│   ├── Properties/AssemblyInfo.cs               [Assembly version: 0.5.2]
+│   └── bin/Debug/Assistance.dll                 [Compiled mod, ~12 KB]
 │
-└── Deploy.ps1                              [⭐ Deployment script - run after building]
-    Copies mod files to Terra Invicta Mods folder
-│   ├── AssistMissionBootstrapPatch.cs           [Harmony bootstrap patch for mission registration]
-│   ├── English.xml                              [Localization strings]
-│   ├── Properties/AssemblyInfo.cs               [Assembly version: 0.3.4]
-│   └── bin/Debug/Assistance.dll                 [Compiled mod, ~11 KB]
+├── CODE_CLEANUP_REVIEW.md                   [Code quality audit with cleanup recommendations]
+├── AI_DEVELOPER_SUMMARY.md                  [This file - comprehensive handoff documentation]
 │
-└── Deploy.ps1                              [⭐ Deployment script - run after building]
-    Copies mod files to Terra Invicta Mods folder
+└── GameAnalysis/                            [Decompiled Terra Invicta assembly (reference only)]
+    └── Assembly-CSharp/                     [Game source code analysis]
+```
+
+---
+
+## 🏗️ Architecture: Bonus Tracking & CP Adjustment (v0.5.2)
+
+### Overview
+
+The Assist mission grants temporary stat bonuses that must be excluded from faction control point maintenance calculations. The architecture uses **two levels of operation**:
+
+1. **Per-Councilor Tracking** (AssistBonusTracker)
+   - Records which councilors received which stat bonuses
+   - Removes bonuses when councilor completes their mission
+
+2. **Faction-Level Adjustment** (TIFactionState_ControlPointMaintenanceCapPatch)
+   - Calculates total CP impact of all active bonuses in a faction
+   - Applies flat adjustment to `GetControlPointMaintenanceFreebieCap()` result
+   - Ensures faction CP maintenance reflects bonus impact
+
+### How It Works
+
+```
+MISSION GRANTED (TIMissionEffect_Assist)
+  ├─ Transfer 0-100% of source councilor's stats to target
+  ├─ Record bonuses by stat in AssistBonusTracker
+  │  ├─ Target.Persuasion += (Source.Persuasion * 25%)
+  │  ├─ Target.Command += (Source.Command * 25%)
+  │  ├─ Target.Administration += (Source.Administration * 25%)
+  │  └─ ... (other stats tracked but don't affect CP)
+  └─ [Bonuses now active, faction CP cap reduced]
+
+FACTION CP CALCULATION (GetControlPointMaintenanceFreebieCap)
+  ├─ Sum: Global freebies + AI bonus + councilor sum + hab sum
+  ├─ Subtract: Effects modifiers
+  ├─ [TIFactionState_ControlPointMaintenanceCapPatch POSTFIX RUNS HERE]
+  │  ├─ Calculate total CP bonus for faction:
+  │  │  └─ Sum (Persuasion_bonus + Command_bonus + Admin_bonus) for all councilors
+  │  └─ Subtract from result: __result -= factionCPBonus
+  └─ Return: Final CP maintenance cap (reduced by bonuses)
+
+UI LEDGER DISPLAY (Per-Councilor)
+  └─ Shows actual councilor stats (bonuses are applied)
+     [UI unchanged - displays correct councilor CP value]
+
+FACTION LEDGER DISPLAY (Faction Level)
+  └─ Shows faction CP maintenance (reduced by bonus adjustment)
+     [Reflects reduced capacity due to assist bonuses]
+
+MISSION COMPLETED (TICouncilorState_CompleteMissionPatch)
+  ├─ Remove bonuses from target councilor
+  │  └─ AssistBonusTracker.RemoveBonuses(councilor)
+  ├─ Bonus tracking cleared
+  └─ Next GetControlPointMaintenanceFreebieCap() call:
+     └─ No bonuses to subtract, faction cap returns to full value
+```
+
+### Code Flow Details
+
+**1. Bonus Application** (Resolved mission)
+```csharp
+// TIMissionEffect_Assist.ApplyEffect()
+foreach (stat in [Persuasion, Investigation, Espionage, Command, Administration, Science, Security])
+{
+    assistAmount = Math.Max(1, Floor(sourceCouncilor[stat] * 0.25));  // 25% default
+    targetCouncilor.ModifyAttribute(stat, assistAmount);              // Apply bonus
+    AssistBonusTracker.RecordBonus(targetCouncilor, stat, assistAmount); // Track it
+}
+```
+
+**2. Bonus Tracking** (AssistBonusTracker)
+```csharp
+private static Dictionary<TICouncilorState, Dictionary<CouncilorAttribute, int>> trackedBonuses;
+private static Dictionary<TICouncilorState, int> totalBonusAmounts;
+
+// GetFactionCPAdjustment(faction) - called by patch
+foreach (councilor in faction.activeCouncilors)
+{
+    cpBonus = GetStatBonus(councilor, Persuasion)
+            + GetStatBonus(councilor, Command)
+            + GetStatBonus(councilor, Administration);
+    totalAdjustment += cpBonus;
+}
+return totalAdjustment;  // Sum of all CP-affecting bonuses in faction
+```
+
+**3. Faction CP Adjustment** (New Postfix Patch)
+```csharp
+// TIFactionState_ControlPointMaintenanceCapPatch.Postfix()
+if (!faction.IsAlienFaction)  // Skip alien factions (different mechanics)
+{
+    int factionCPAdjustment = AssistBonusTracker.GetFactionCPAdjustment(faction);
+    __result -= factionCPAdjustment;  // Subtract from calculated cap
+}
+```
+
+**4. Bonus Removal** (Mission completion)
+```csharp
+// TICouncilorState_CompleteMissionPatch.Postfix()
+AssistBonusTracker.RemoveBonuses(__instance);
+// Removes bonuses from attributes and clears tracking
+// Next faction CP calculation will see no bonuses, cap restored to full
+```
+
+### CP-Affecting Stats
+
+Only these three stats impact control point capacity:
+- **Persuasion** - Affects councilor CP value (+1 Persuasion ≈ +0.25 CP)
+- **Command** - Affects councilor CP value (+1 Command ≈ +0.25 CP)
+- **Administration** - Affects councilor CP value (+1 Administration ≈ +0.25 CP)
+
+Other stats (Investigation, Espionage, Science, Security) are bonused but don't affect CP.
+
+### Faction Cap Formula (Post-Patch)
+
+```
+Faction CP Cap = [
+    100 (global base freebies)
+    + AI_bonus (if AI faction)
+    + SUM(councilor.controlPointCapacity for each active councilor)
+    + SUM(hab.controlPointCapacityValue for each sector)
+    - effects_modifiers
+] - ASSIST_BONUS_ADJUSTMENT
+
+Where:
+  ASSIST_BONUS_ADJUSTMENT = SUM(
+      (councilor.persuasion_bonus + councilor.command_bonus + councilor.admin_bonus)
+      for each councilor in faction
+  )
 ```
 
 ---
@@ -576,7 +720,468 @@ C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\
 
 ---
 
+## 🧪 Testing Objectives - v0.5.2
+
+### Primary Focus: Faction-Level CP Cap Adjustment
+
+**Test Date:** 2026-09-11  
+**Architecture Change:**
+- Moved from per-councilor CP reduction (v0.5.1) to faction-level cap adjustment (v0.5.2)
+- Bonus impact now applied to `GetControlPointMaintenanceFreebieCap()` instead of individual `controlPointCapacity`
+- Per-councilor ledger unchanged; faction maintenance cap reflects bonus adjustment
+- Eliminates double-counting and activeCouncilors filtering issues
+
+### Test Scenarios
+
+#### 1. **Faction CP Maintenance Reflects Assist Bonuses** ✅
+**Objective:** Verify that faction CP maintenance cap is reduced by assist bonus amount
+
+**Setup:**
+- Player-controlled faction with 2 councilors (A and B)
+- Councilor A: Persuasion=40, Command=35, Administration=30 (sum affects CP: +26 per point ≈ +26 CP when base)
+- Councilor B: Starting CP capacity (get from Nations screen)
+- Expected bonus: 25% of A's stats = ~+10 to +12 CP impact
+
+**Test Steps:**
+1. Open Nations screen, record faction CP Maintenance Cap (before assist)
+2. Use Assist Mission: A → B (25% default bonus)
+3. Navigate away and back to Nations screen
+4. **VERIFY:** CP Maintenance Cap REDUCED by approximately the bonus amount
+5. Check log: Should see `[CP_CAP_PATCH] Faction '...': Original Cap=X, Assist Bonus Adjustment=-Y, Adjusted Cap=Z`
+6. B completes their mission
+7. Navigate away and back to Nations screen
+8. **VERIFY:** CP Maintenance Cap returns to original value
+
+**Expected Logs:**
+```
+[CP_CAP_PATCH] Faction 'Earth Government': Original Cap=450, Assist Bonus Adjustment=-35, Adjusted Cap=415
+[AssistMission] Removed bonuses for 'Smith' on mission complete
+[CP_CAP_PATCH] Faction 'Earth Government': Original Cap=450, Assist Bonus Adjustment=-0, Adjusted Cap=450
+```
+
+**Important:** Per-councilor ledger should still show correct individual CP values (unchanged)
+
+---
+
+#### 2. **Per-Councilor Ledger Unaffected** ✅
+**Objective:** Verify that per-councilor CP display shows actual councilor CP, not reduced value
+
+**Setup:**
+- Councilor A before assist
+- Councilor B before assist
+- Record individual CP values from councilor detail screen
+
+**Test Steps:**
+1. Apply Assist A → B
+2. View B's detail screen → CP value should still show ACTUAL value (bonuses applied to stats, not hidden)
+3. Compare to pre-assist value (may have changed due to bonus-affected stats)
+4. View ledger for B: Should show normal CP value (not reduced)
+5. **VERIFY:** No UI shows "adjusted" or "reduced" CP per councilor
+
+**Expected Behavior:**
+- B's stats increased (Persuasion, Command, Administration)
+- B's CP reflects the increased stats normally
+- Faction CP cap reduced (happens at faction level, not councilor level)
+
+---
+
+#### 3. **Multiple Assist Missions Stack Correctly** ✅
+**Objective:** Verify that multiple overlapping assist bonuses all count in faction cap reduction
+
+**Setup:**
+- Faction with 3+ councilors
+- Councilor A: High base stats
+- Councilors B, C, D: Target for assist
+
+**Test Steps:**
+1. Record initial faction CP cap
+2. Assist A → B (expect ~35 CP reduction)
+3. Record faction CP cap (should be reduced by ~35)
+4. Assist A → C (expect another ~35 CP reduction)
+5. Record faction CP cap (should be reduced by ~70 total)
+6. Assist A → D (expect another ~35 CP reduction)
+7. Record faction CP cap (should be reduced by ~105 total)
+8. B completes mission
+9. Record faction CP cap (should be reduced by ~70 now, B's bonus gone)
+10. C completes mission
+11. Record faction CP cap (should be reduced by ~35 now, C's bonus gone)
+12. D completes mission
+13. Record faction CP cap (should return to original, all bonuses gone)
+
+**Expected Behavior:**
+- Each bonus independently tracked
+- Faction cap reduction is sum of all active bonuses
+- Bonuses removed independently as councilors complete missions
+- No interaction between simultaneous bonuses
+
+---
+
+#### 4. **Alien Faction Unaffected** ✅
+**Objective:** Verify that alien factions are skipped by the patch
+
+**Setup:**
+- Game with alien faction (if testable)
+- Or examine patch code for alien faction guard
+
+**Test Steps:**
+1. Verify alien factions return 20000f from GetControlPointMaintenanceFreebieCap()
+2. Check patch: `if (__instance.IsAlienFaction) return;` prevents modification
+3. **VERIFY:** No CP_CAP_PATCH logs for alien factions
+
+**Expected Behavior:**
+- Alien faction CP cap unchanged by assist bonuses
+- Guard logic prevents patch execution
+
+---
+
+#### 5. **Bonus Removal on Mission Complete** ✅
+**Objective:** Verify that GetFactionCPAdjustment() correctly identifies removed bonuses
+
+**Setup:**
+- Active assist bonuses in faction
+- Tracking data shows bonuses in AssistBonusTracker
+
+**Test Steps:**
+1. Inspect AssistBonusTracker.totalBonusAmounts (in logs or via debug)
+2. Verify council with active bonus appears in tracking
+3. Council completes mission
+4. Inspect AssistBonusTracker.totalBonusAmounts again
+5. **VERIFY:** Council removed from tracking dict
+6. **VERIFY:** Next GetFactionCPAdjustment() returns lower value
+
+**Expected Behavior:**
+- RemoveBonuses() clears tracking for that councilor
+- GetFactionCPAdjustment() stops counting that councilor's bonuses
+- Faction cap recalculation accurate
+
+---
+
+#### 6. **Edge Cases**
+**Objective:** Verify robustness in unusual scenarios
+
+**Test Scenarios:**
+
+**a) Rapid multiple mission completions**
+- Give councilors A, B, C overlapping assist bonuses
+- Complete all 3 missions rapidly
+- Verify each bonus removal updates faction cap independently
+
+**b) Mission completion without assist**
+- Complete normal mission (no assist involved)
+- Verify no [CP_CAP_PATCH] log (no bonus to adjust)
+
+**c) Assist to councilor with zero CP**
+- Apply assist to councilor with 0 CP capacity
+- Verify faction cap still reduced by bonus amount
+- Verify cap doesn't go negative (clamped if needed)
+
+**d) AI factions**
+- Verify Assist mission doesn't appear in AI councilor lists
+- Verify bonus tracking ignores AI faction councilors
+- Verify GetFactionCPAdjustment returns 0 for AI factions (no active bonuses)
+
+---
+
+### Monitoring & Logging
+
+**Key Log Patterns to Watch:**
+
+```
+✅ SUCCESS patterns:
+[CP_CAP_PATCH] Faction 'Name': Original Cap=X, Assist Bonus Adjustment=-Y, Adjusted Cap=Z
+[AssistMission] Removed bonuses for 'CouncilorName' on mission complete
+
+⚠️ WARNING patterns (investigate):
+No [CP_CAP_PATCH] logs when bonus applied
+GetFactionCPAdjustment returning unexpected values
+
+❌ ERROR patterns (blocking):
+Exception in GetFactionCPAdjustment
+Negative CP cap values
+IsAlienFaction null reference
+```
+
+---
+
+### Success Criteria
+
+✅ Faction CP maintenance cap reduces when bonuses applied  
+✅ Reduction equals sum of CP-affecting bonuses (Persuasion + Command + Administration)  
+✅ Per-councilor ledger unchanged (displays actual councilor CP)  
+✅ Multiple simultaneous bonuses stack correctly  
+✅ Bonuses removed independently as missions complete  
+✅ Alien factions unaffected (return 20000f unchanged)  
+✅ Logs show correct before/after cap values  
+✅ No crashes or UI errors  
+
+---
+
+## 🎯 v0.5.2 Architecture vs v0.5.1 Comparison
+
+| Aspect | v0.5.1 (Per-Councilor) | v0.5.2 (Faction-Level) |
+|--------|------|---------|
+| **Patch Target** | `TICouncilorState.get_controlPointCapacity` | `TIFactionState.GetControlPointMaintenanceFreebieCap()` |
+| **Patch Type** | Postfix on getter | Postfix on calculation method |
+| **Adjustment Scope** | Per-councilor | Faction-wide flat adjustment |
+| **Ledger Display** | Shows reduced CP per councilor | Shows actual CP per councilor, reduced faction cap |
+| **Double-Count Risk** | Higher (getter called multiple times) | Minimal (single calculation point) |
+| **activeCouncilors Filtering** | Can interact with filtering logic | No interaction (already summed) |
+| **Calculation Order** | During councilor lookup | After all components calculated |
+| **Alien Faction Guard** | In getter logic | In postfix condition |
+| **Code Complexity** | Higher (must match v0.5.0 approach) | Lower (focused single patch) |
+| **Maintainability** | Harder to verify correct context | Easier to understand flat adjustment |
+
+---
+
+## 🎯 v0.5.2 Quick Reference - What Changed
+
+**Major Architecture Change:**
+
+| Component | v0.5.1 | v0.5.2 | Status |
+|-----------|--------|--------|--------|
+| CP Adjustment Location | Per-councilor getter | Faction-level cap | ✅ Refactored |
+| Patch File | TICouncilorState_ControlPointCapacityPatch.cs | TIFactionState_ControlPointMaintenanceCapPatch.cs | ✅ Replaced |
+| Mission Completion | CP before/after capture + logging | Simple bonus removal | ✅ Simplified |
+| Bonus Calculation | GetStatBonus() per councilor | GetFactionCPAdjustment() per faction | ✅ Elevated |
+
+**Code Changes:**
+- ✅ **ADDED:** `TIFactionState_ControlPointMaintenanceCapPatch.cs` (new faction-level patch)
+- ✅ **REMOVED:** `TICouncilorState_ControlPointCapacityPatch.cs` (old per-councilor patch)
+- ✅ **ENHANCED:** `AssistBonusTracker.cs` - added `GetFactionCPAdjustment(faction)` method
+- ✅ **SIMPLIFIED:** `TICouncilorState_CompleteMissionPatch.cs` - removed CP logging
+
+**Testing Checklist (v0.5.2):**
+- [ ] Faction CP maintenance cap reduces when bonus applied
+- [ ] Reduction = sum of (Persuasion_bonus + Command_bonus + Admin_bonus)
+- [ ] Per-councilor ledger shows actual CP (unchanged)
+- [ ] Multiple assist missions stack correctly
+- [ ] Each mission completion independently removes bonus
+- [ ] Faction cap returns to full value when all bonuses gone
+- [ ] AI factions unaffected (20000f baseline)
+- [ ] No crashes or UI errors
+- [ ] Check logs: `[CP_CAP_PATCH]` and `[AssistMission]` messages
+
+**Key Log Messages to Monitor:**
+```
+✅ Expected:
+[CP_CAP_PATCH] Faction 'Earth Government': Original Cap=450, Assist Bonus Adjustment=-35, Adjusted Cap=415
+[AssistMission] Removed bonuses for 'CouncilorName' on mission complete
+
+❌ Problematic:
+No [CP_CAP_PATCH] logs
+GetFactionCPAdjustment returning 0 when bonuses active
+Exception in patch execution
+```
+
+**If Issues Occur:**
+1. Check mod loads: Search Player.log for mod name and version
+2. Verify patch applied: Look for `[CP_CAP_PATCH]` messages in first few seconds
+3. Check bonus tracking: `[AssistMission]` logs should appear when mission completes
+4. Verify faction selection: Test with player faction (not AI)
+5. Clear cache: `Remove-Item "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\*.cache" -Force`
+6. Restart game
+
+**See Also:**
+- CODE_CLEANUP_REVIEW.md - Code quality audit
+- TESTING_GUIDE.md - Comprehensive testing methodology
+- LOG_ANALYSIS.md - Example log analysis
+
+---
+
+**Next AI Developer:** If issues arise, focus on:
+1. **Architecture:** Faction-level cap adjustment (not per-councilor)
+2. **Bonus Tracking:** AssistBonusTracker tracks all active bonuses by faction
+3. **Patch Point:** GetControlPointMaintenanceFreebieCap() - late in calculation chain
+4. **Guard Condition:** Skip alien factions (return 20000f)
+
+Good luck! 🚀
+## 🔍 Debugging Tips - v0.5.2
+
+### If CP Cap Doesn't Reduce When Bonus Applied
+1. Check `AssistBonusTracker.GetFactionCPAdjustment(faction)` returns > 0
+2. Verify `TIFactionState_ControlPointMaintenanceCapPatch` is loaded (check mod logs)
+3. Verify councilor with bonus is in faction.activeCouncilors
+4. Check patch targets correct method: `GetControlPointMaintenanceFreebieCap()`
+
+### If CP Cap Reduces But Doesn't Return to Full Value
+1. Check `AssistBonusTracker.RemoveBonuses()` is called on mission complete
+2. Verify bonus tracking dict is cleared (no lingering entries)
+3. Verify next `GetFactionCPAdjustment()` call returns 0
+4. Check for stale bonus entries from other councilors
+
+### If Alien Faction Cap Changed
+1. Verify `if (__instance.IsAlienFaction) return;` guard exists
+2. Alien factions should return 20000f baseline, patch should not modify
+3. Check logs for unexpected [CP_CAP_PATCH] entries with alien faction name
+
+
+2. Check ledger for B: CP should be REDUCED (bonus subtracted from capacity)
+3. Wait for B to complete their active mission (any mission)
+4. **VERIFY:** 
+   - CP value returns to original before-assist value
+   - Log shows `[CP_UPDATE]` message with before/after values
+   - Game doesn't crash or show UI errors
+
+**Expected Logs:**
+```
+[CP_PATCH] Councilor 'B': Original CP=50, CP Bonuses=12, Adjusted CP=38
+[CP_UPDATE] Mission complete for 'B': CP restored from 38 to 50
+```
+
+---
+
+#### 2. **Mission Completion Triggers CP Review**
+**Objective:** Verify that multiple mission completions correctly reset CP each time
+
+**Setup:**
+- Player-controlled faction with 3+ councilors
+- Councilor A: Static high stats (for consistent bonuses)
+- Councilors B, C, D: Different CP starting values
+
+**Test Steps:**
+1. Assist A → B
+2. B completes mission → Check CP restored (log should show delta)
+3. Assist A → C
+4. C completes mission → Check CP restored (log should show delta)
+5. Assist A → D (multiple times if possible)
+6. D completes mission → Check CP restored
+
+**Expected Behavior:**
+- Each mission completion triggers independent CP recalculation
+- Logs show correct before/after for each councilor
+- No orphaned bonuses remain in AssistBonusTracker
+
+---
+
+#### 3. **Bonus Tracking Accuracy**
+**Objective:** Verify that per-stat bonuses are correctly tracked and removed
+
+**Setup:**
+- Councilor A with Persuasion=30, Command=25, Administration=20
+- Councilor B to receive assist (25% bonus)
+- Expected bonuses: +8 Persuasion, +6 Command, +5 Administration = 19 total CP reduction
+
+**Test Steps:**
+1. Record A's stats in detail
+2. Use Assist A → B
+3. Check B's ledger: Should show 19 CP reduction (8+6+5)
+4. B completes mission
+5. Verify CP log shows correct delta calculation
+
+**Expected Behavior:**
+- CP reduction = sum of (Persuasion_bonus + Command_bonus + Admin_bonus)
+- Log message includes all three components
+- Bonus tracker correctly identifies which stats contributed
+
+---
+
+#### 4. **Code Cleanup - No Regressions**
+**Objective:** Verify that unused using statement removal didn't break anything
+
+**Setup:**
+- Fresh game load with v0.5.1 mod
+- Normal assist mission usage (multiple scenarios)
+
+**Test Steps:**
+1. Create assist mission (verify mission appears in available list)
+2. Use assist mission (verify bonuses apply correctly)
+3. Complete mission (verify cleanup works)
+4. Check logs for ANY compilation warnings or errors
+5. Verify UI doesn't show localization or display issues
+
+**Expected Behavior:**
+- Zero mod-related errors in logs
+- All features work identically to v0.5.0
+- No new warnings in VS output
+
+---
+
+#### 5. **Faction CP Maintenance Calculation**
+**Objective:** Verify that faction-level CP calculations don't include assist bonuses
+
+**Setup:**
+- Player faction with 2-3 councilors
+- Check faction CP maintenance costs BEFORE assist mission
+- Apply assist mission
+- Check faction CP maintenance costs AFTER assist mission
+
+**Test Steps:**
+1. Open Nations screen, view faction details
+2. Note Total CP Capacity before assist
+3. Apply Assist A → B (25% bonus)
+4. Navigate away and back to Nations screen
+5. Verify CP Capacity shows REDUCED by bonus amount
+6. Complete B's mission
+7. Verify CP Capacity returns to original value
+
+**Expected Behavior:**
+- Faction CP maintenance reflects REDUCED capacity when bonuses active
+- After bonus removal, faction CP returns to full value
+- UI ledger values match internal calculation
+
+---
+
+#### 6. **Edge Cases**
+**Objective:** Verify robustness in unusual scenarios
+
+**Test Scenarios:**
+
+**a) Rapid mission completions**
+- Give councilor A 3 overlapping assist bonuses
+- Complete mission quickly
+- Verify all 3 bonuses are removed correctly
+
+**b) Mission completion without assist**
+- Complete normal mission (no assist involved)
+- Verify [CP_UPDATE] log doesn't appear (no bonus to restore)
+
+**c) Assist to councilor with zero CP**
+- Apply assist to councilor with 0 CP capacity
+- Verify CP doesn't go negative (clamped to 0 minimum)
+- Verify bonus is still tracked for removal
+
+**d) AI vs Player factions**
+- Load game with both player and AI factions
+- Verify Assist mission doesn't appear in AI faction mission lists
+- Verify player faction can use Assist normally
+
+---
+
+### Monitoring & Logging
+
+**Key Log Patterns to Watch:**
+
+```
+✅ SUCCESS patterns:
+[CP_PATCH] Councilor 'Name': Original CP=X, CP Bonuses=Y, Adjusted CP=Z
+[CP_UPDATE] Mission complete for 'Name': CP restored from X to Y
+
+⚠️ WARNING patterns (investigate):
+[CP_PATCH] Postfix error: 
+[AssistBonusTracker] Error
+[CP_UPDATE] ... CP restored from X to X  (no change = bonus not removed)
+
+❌ ERROR patterns (blocking):
+KeyNotFoundException
+NullReferenceException
+ArithmeticException (negative CP)
+```
+
+---
+
+### Success Criteria
+
+✅ All missions complete without crashes  
+✅ CP values update correctly each mission completion  
+✅ Logs show consistent before/after CP deltas  
+✅ No new compilation warnings  
+✅ Unused using statement removal causes zero regressions  
+✅ Attribute-based patching works identically to v0.5.0 reflection approach  
+
+---
+
 ## 📚 References
+
 
 - **Inspire Mission Template:** `C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\StreamingAssets\Templates\TIMissionTemplate.json` (line ~2509)
 - **Game Analysis:** `GameAnalysis/Assembly-CSharp/` folder contains decompiled game code
@@ -608,3 +1213,45 @@ git push origin master
 3. Game logs in `C:\Users\{User}\AppData\LocalLow\Pavonis Interactive\TerraInvicta\Player.log`
 
 Good luck! 🚀
+
+---
+
+## 🎯 v0.5.1 Quick Reference - What Changed
+
+**Code Changes:**
+| File | Change | Impact |
+|------|--------|--------|
+| TICouncilorState_ControlPointCapacityPatch.cs | Removed TargetMethod() reflection, direct [HarmonyPatch] attribute | Cleaner code, same functionality |
+| TICouncilorState_CompleteMissionPatch.cs | Added CP before/after capture + logging | Force CP recalculation, better transparency |
+| TIMissionModifier_AssistStat.cs | Removed unused `using System.Text;` | Code cleanup |
+| TIMissionCondition_MyFactionCouncilor.cs | Removed unused `using System;` | Code cleanup |
+| TIMissionCondition_PlayerFactionOnly.cs | Removed unused `using System;` | Code cleanup |
+
+**Testing Checklist:**
+- [ ] Assist mission applies bonuses correctly
+- [ ] CP capacity reduces when bonus applied (ledger shows delta)
+- [ ] Mission completion removes bonus (log shows [CP_UPDATE] message)
+- [ ] CP value returns to pre-assist level
+- [ ] No crashes or UI errors
+- [ ] Multiple assist missions work independently
+- [ ] AI factions cannot use Assist mission
+- [ ] Check Player.log for errors (search: "AssistMission", "CP_", "Exception")
+
+**Key Log Messages to Monitor:**
+```
+[CP_PATCH] Councilor 'Name': Original CP=X, CP Bonuses=Y, Adjusted CP=Z
+[CP_UPDATE] Mission complete for 'Name': CP restored from X to Y
+```
+
+**If Issues Occur:**
+1. Check `Player.log` for error messages
+2. Verify ModInfo.json version matches game mod folder (v0.5.1)
+3. Clear cache: `Remove-Item "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\*.cache" -Force`
+4. Restart game
+5. Check logs again
+
+**See Also:**
+- CODE_CLEANUP_REVIEW.md - Additional cleanup opportunities for future versions
+- TESTING_GUIDE.md - Comprehensive testing methodology
+- LOG_ANALYSIS.md - Example log analysis from v0.5.0 testing
+

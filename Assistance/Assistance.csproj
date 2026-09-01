@@ -73,6 +73,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="TICouncilorState_CompleteMissionPatch.cs" />
     <Compile Include="TICouncilorState_GetPossibleMissionListPatch.cs" />
+    <Compile Include="TIFactionState_ControlPointMaintenanceCapPatch.cs" />
     <Compile Include="TIMissionCondition_MyFactionCouncilor.cs" />
     <Compile Include="TIMissionCondition_PlayerFactionOnly.cs" />
     <Compile Include="TIMissionEffect_Assist.cs" />
@@ -83,6 +84,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AI_DEVELOPER_SUMMARY.md" />
+    <None Include="CODE_CLEANUP_REVIEW.md" />
     <None Include="FIX_TARGET_VALIDATION.md" />
     <None Include="TIMissionTemplate.en" />
   </ItemGroup>

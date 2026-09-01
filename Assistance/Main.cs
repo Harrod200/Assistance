@@ -48,6 +48,9 @@ namespace Assistance
 
             GUILayout.Space(8f);
             Main.settings.enableAssistMission = GUILayout.Toggle(Main.settings.enableAssistMission, "Enable Assist Mission for councilors", new GUILayoutOption[0]);
+
+            GUILayout.Space(8f);
+            Main.settings.debugLogging = GUILayout.Toggle(Main.settings.debugLogging, "Enable Debug Logging", new GUILayoutOption[0]);
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
