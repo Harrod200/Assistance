@@ -87,6 +87,7 @@
     <None Include="CODE_CLEANUP_REVIEW.md" />
     <None Include="FIX_TARGET_VALIDATION.md" />
     <None Include="TIMissionTemplate.en" />
+    <None Include="VO_ERROR_FIX.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assistance\" />
