@@ -43,6 +43,12 @@ namespace Assistance
                 totalBonusAmounts[councilor] = 0;
             }
             totalBonusAmounts[councilor] += amount;
+
+            if (Main.mod != null)
+            {
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Recorded bonus for '{0}': {1} +{2}, Total={3}", 
+                    councilor.displayName, stat.ToString(), amount, totalBonusAmounts[councilor]));
+            }
         }
 
         /// <summary>
@@ -53,7 +59,13 @@ namespace Assistance
             if (councilor == null || !totalBonusAmounts.ContainsKey(councilor))
                 return 0;
 
-            return totalBonusAmounts[councilor];
+            int bonus = totalBonusAmounts[councilor];
+            if (Main.mod != null && bonus > 0)
+            {
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetCouncilorBonusAmount for '{0}': {1}", 
+                    councilor.displayName, bonus));
+            }
+            return bonus;
         }
 
         /// <summary>
