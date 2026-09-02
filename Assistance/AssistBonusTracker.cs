@@ -5,25 +5,36 @@ using PavonisInteractive.TerraInvicta;
 namespace Assistance
 {
     /// <summary>
-    /// Tracks assist bonuses granted to councilors so they can be removed when missions complete.
-    /// Also tracks total bonus amounts for control point cap exclusion calculation.
+    /// Tracks assist bonuses that are applied only during contested mission resolution.
+    /// Bonuses are NOT added to base attributes; they are applied as temporary modifiers
+    /// only when calculating contested mission success chances.
     /// </summary>
     public static class AssistBonusTracker
     {
         private static Dictionary<TICouncilorState, Dictionary<CouncilorAttribute, int>> trackedBonuses = 
             new Dictionary<TICouncilorState, Dictionary<CouncilorAttribute, int>>();
 
-        // Track total assist bonus amount per councilor for control point cap calculation
+        // Track total assist bonus amount per councilor (for logging and contested checks)
         private static Dictionary<TICouncilorState, int> totalBonusAmounts = 
             new Dictionary<TICouncilorState, int>();
 
         /// <summary>
-        /// Records an assist bonus for a councilor
+        /// Records an assist bonus for a councilor (tracked but not yet applied to attributes).
+        /// Bonuses will be applied when the councilor faces contested missions.
         /// </summary>
         public static void RecordBonus(TICouncilorState councilor, CouncilorAttribute stat, int amount)
         {
+            if (Main.mod != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] RecordBonus called - Councilor: {0}, Stat: {1}, Amount: {2}", 
+                    councilor != null ? councilor.displayName : "NULL", stat, amount));
+
             if (councilor == null || amount <= 0)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] RecordBonus rejected - councilor null: {0}, amount <= 0: {1}", 
+                        councilor == null, amount <= 0));
                 return;
+            }
 
             if (!trackedBonuses.ContainsKey(councilor))
             {
@@ -37,7 +48,7 @@ namespace Assistance
 
             trackedBonuses[councilor][stat] += amount;
 
-            // Track total bonus amount for control point cap calculation
+            // Track total bonus amount for contested mission checks
             if (!totalBonusAmounts.ContainsKey(councilor))
             {
                 totalBonusAmounts[councilor] = 0;
@@ -52,7 +63,7 @@ namespace Assistance
         }
 
         /// <summary>
-        /// Gets the assist bonus for a specific stat (used for control point cap exclusion)
+        /// Gets the assist bonus for a specific stat (used during contested mission checks).
         /// </summary>
         public static int GetStatBonus(TICouncilorState councilor, CouncilorAttribute stat)
         {
@@ -66,7 +77,35 @@ namespace Assistance
         }
 
         /// <summary>
-        /// Removes all tracked bonuses for a councilor
+        /// Gets the total bonus pool for a councilor (sum of all stat bonuses).
+        /// Used by contested mission patches to apply bonuses during checks.
+        /// </summary>
+        public static int GetTotalBonus(TICouncilorState councilor)
+        {
+            if (councilor == null)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log("[AssistBonusTracker] GetTotalBonus called with NULL councilor!");
+                return 0;
+            }
+
+            if (!totalBonusAmounts.ContainsKey(councilor))
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetTotalBonus: No bonuses tracked for '{0}'", councilor.displayName));
+                return 0;
+            }
+
+            int bonus = totalBonusAmounts[councilor];
+            if (Main.mod != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetTotalBonus for '{0}': {1} points", councilor.displayName, bonus));
+
+            return bonus;
+        }
+
+        /// <summary>
+        /// Clears all tracked bonuses for a councilor when their mission completes.
+        /// Note: Bonuses were never applied to attributes, so no reversal is needed.
         /// </summary>
         public static void RemoveBonuses(TICouncilorState councilor)
         {
@@ -75,12 +114,11 @@ namespace Assistance
 
             if (trackedBonuses.ContainsKey(councilor))
             {
-                Dictionary<CouncilorAttribute, int> bonuses = trackedBonuses[councilor];
-
-                foreach (KeyValuePair<CouncilorAttribute, int> bonus in bonuses)
+                if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    // Restore the bonus (negative value removes it)
-                    councilor.ModifyAttribute(bonus.Key, -bonus.Value);
+                    int totalBonus = GetTotalBonus(councilor);
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Clearing {0} total bonus points for '{1}'", 
+                        totalBonus, councilor.displayName));
                 }
 
                 trackedBonuses.Remove(councilor);
@@ -94,40 +132,7 @@ namespace Assistance
         }
 
         /// <summary>
-        /// Gets the total CP adjustment for a faction (sum of all CP-affecting bonuses for all councilors in that faction)
-        /// Used by faction-level GetControlPointMaintenanceFreebieCap patch to apply flat adjustment
-        /// </summary>
-        public static int GetFactionCPAdjustment(TIFactionState faction)
-        {
-            if (faction == null)
-                return 0;
-
-            int totalAdjustment = 0;
-
-            // Sum all CP-affecting bonuses for councilors in this faction
-            foreach (var kvp in totalBonusAmounts)
-            {
-                TICouncilorState councilor = kvp.Key;
-                int totalBonus = kvp.Value;
-
-                // Only count bonuses for councilors in this faction
-                if (councilor != null && councilor.faction == faction)
-                {
-                    // Calculate CP impact: only Persuasion, Command, Administration affect CP
-                    int persuasionBonus = GetStatBonus(councilor, CouncilorAttribute.Persuasion);
-                    int commandBonus = GetStatBonus(councilor, CouncilorAttribute.Command);
-                    int administrationBonus = GetStatBonus(councilor, CouncilorAttribute.Administration);
-
-                    int cpBonus = persuasionBonus + commandBonus + administrationBonus;
-                    totalAdjustment += cpBonus;
-                }
-            }
-
-            return totalAdjustment;
-        }
-
-        /// <summary>
-        /// Clears all tracked bonuses (for mod reload/unload)
+        /// Clears all tracked bonuses (for mod reload/unload).
         /// </summary>
         public static void ClearAll()
         {

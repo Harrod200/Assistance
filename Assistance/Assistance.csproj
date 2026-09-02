@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -44,6 +44,9 @@
       <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
     <Reference Include="UnityModManager">
       <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
       <Private>False</Private>
@@ -68,26 +71,34 @@
   <ItemGroup>
     <Compile Include="AssistBonusTracker.cs" />
     <Compile Include="AssistMissionBootstrapPatch.cs" />
+    <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
     <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
+    <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
+    <Compile Include="FinalizeCouncilorMissions_AssistPriorityPatch.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TICouncilorState_CompleteMissionPatch.cs" />
     <Compile Include="TICouncilorState_GetPossibleMissionListPatch.cs" />
     <Compile Include="TIFactionState_ControlPointMaintenanceCapPatch.cs" />
     <Compile Include="TIMissionCondition_MyFactionCouncilor.cs" />
+    <Compile Include="TIMissionCondition_NotCurrentlyAssisting.cs" />
     <Compile Include="TIMissionCondition_PlayerFactionOnly.cs" />
     <Compile Include="TIMissionEffect_Assist.cs" />
     <Compile Include="TIMissionModifier_AssistFlat.cs" />
     <Compile Include="TIMissionModifier_AssistStat.cs" />
+    <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
     <Compile Include="TIMissionTemplate_Assist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AI_DEVELOPER_SUMMARY.md" />
-    <None Include="CODE_CLEANUP_REVIEW.md" />
-    <None Include="FIX_TARGET_VALIDATION.md" />
+    <None Include="API_REFERENCE.md" />
+    <None Include="ARCHITECTURE.md" />
+    <None Include="DEVELOPER_GUIDE.md" />
+    <None Include="DOCUMENTATION_COMPLETE.md" />
+    <None Include="DOCUMENTATION_INDEX.md" />
+    <None Include="QUICK_REFERENCE.md" />
+    <None Include="README.md" />
     <None Include="TIMissionTemplate.en" />
-    <None Include="VO_ERROR_FIX.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assistance\" />

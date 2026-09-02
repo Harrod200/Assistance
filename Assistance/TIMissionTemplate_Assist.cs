@@ -23,7 +23,7 @@ namespace Assistance
                 this.specialPost = false;
                 this.permanentAssignment = false;
                 this.XPonSuccess = 2;
-                this.sortOrder = 23; // Slightly after Inspire (22)
+                this.sortOrder = 0; // Slightly after Inspire (22)
                 this.missionContext = MissionContext.Unlimited;
                 this.utilityScore = 1f;
                 this.UIalertEnemyOnFail = false;
@@ -50,8 +50,9 @@ namespace Assistance
                 // No restrictions on location, mission status, or other factors
                 this.conditions = new List<TIMissionCondition>
                 {
-                    new TIMissionCondition_MyFactionCouncilor(),  // Target must be same faction
-                    new TIMissionCondition_PlayerFactionOnly()    // Faction must be player-controlled
+                    new TIMissionCondition_MyFactionCouncilor(),      // Target must be same faction
+                    new TIMissionCondition_PlayerFactionOnly(),       // Faction must be player-controlled
+                    new TIMissionCondition_NotCurrentlyAssisting()    // Target cannot be currently assisting
                 };
 
                 this.movementRule = MissionMovementRule.MoveToTarget;
@@ -63,12 +64,6 @@ namespace Assistance
                 this.targetEffects = new List<TIMissionEffect>
                 {
                     new TIMissionEffect_Assist()
-                };
-
-                // Free mission - no cost (match Inspire pattern)
-                this.cost = new TIMissionCost_Bonus
-                {
-                    resourceType = FactionResource.None
                 };
 
                 this.missionIconImagePath = "councilor_missions/ICO_inspire";
