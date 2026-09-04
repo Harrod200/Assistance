@@ -80,9 +80,11 @@ namespace Assistance
                 .ThenBy(m => m.getResolutionOrder)                             // Then sort by resolution order
                 .ToList();
 
-            int assistMissionCount = sortedMissions.Count(m => m.missionTemplate.dataName == "Assist");
             if (Main.mod != null && Main.settings.debugLogging)
+            {
+                int assistMissionCount = sortedMissions.Count(m => m.missionTemplate.dataName == "Assist");
                 Main.mod.Logger.Log(string.Format("[AssistBonusTracker] After sorting: {0} Assist missions, {1} total missions", assistMissionCount, sortedMissions.Count));
+            }
 
             // Count missions by resolution order segment (with bounds checking)
             int[] missionCountPerSegment = new int[resolutionSegmentsPerPhase];

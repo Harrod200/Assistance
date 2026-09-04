@@ -19,7 +19,7 @@ namespace Assistance
                     RegisterMissionTemplate();
                     int councilorTypes = GrantToAllCouncilors();
 
-                    if (Main.mod != null)
+                    if (Main.mod != null && Main.settings.debugLogging)
                     {
                         Main.mod.Logger.Log(string.Concat(new object[] { "Assist mission registered. Grants: councilorTypes=", councilorTypes, "." }));
                     }
@@ -39,7 +39,7 @@ namespace Assistance
             try
             {
                 var assistMission = new TIMissionTemplate_Assist();
-                if (Main.mod != null)
+                if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log("Created TIMissionTemplate_Assist instance.");
                     Main.mod.Logger.Log("  - dataName: " + assistMission.dataName);
@@ -54,7 +54,7 @@ namespace Assistance
 
                 TemplateManager.Add(assistMission, typeof(TIMissionTemplate), true);
 
-                if (Main.mod != null)
+                if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log("Successfully registered Assist mission template with TemplateManager.");
                 }
@@ -77,7 +77,7 @@ namespace Assistance
                 // Get all councilor types
                 var councilTypes = TemplateManager.IterateByClass<TICouncilorTypeTemplate>(true).ToList();
 
-                if (Main.mod != null)
+                if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log(string.Format("Found {0} councilor types to grant Assist mission to.", councilTypes.Count));
                 }
@@ -88,7 +88,7 @@ namespace Assistance
                 {
                     if (councilType != null)
                     {
-                        if (Main.mod != null)
+                        if (Main.mod != null && Main.settings.debugLogging)
                         {
                             Main.mod.Logger.Log(string.Format("Processing councilor type: {0}, current missions: {1}", councilType.dataName, string.Join(", ", councilType.missionNames ?? new string[0])));
                         }
@@ -102,19 +102,19 @@ namespace Assistance
 
                             count++;
 
-                            if (Main.mod != null)
+                            if (Main.mod != null && Main.settings.debugLogging)
                             {
                                 Main.mod.Logger.Log(string.Format("Granted Assist mission to councilor type: {0}", councilType.dataName));
                             }
                         }
-                        else if (Main.mod != null)
+                        else if (Main.mod != null && Main.settings.debugLogging)
                         {
                             Main.mod.Logger.Log(string.Format("Assist mission already present in councilor type: {0}", councilType.dataName));
                         }
                     }
                 }
 
-                if (Main.mod != null && count > 0)
+                if (Main.mod != null && Main.settings.debugLogging && count > 0)
                 {
                     Main.mod.Logger.Log(string.Format("Successfully granted Assist mission to {0} councilor types.", count));
                 }
