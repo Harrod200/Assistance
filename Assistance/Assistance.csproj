@@ -71,13 +71,14 @@
   <ItemGroup>
     <Compile Include="AssistBonusTracker.cs" />
     <Compile Include="AssistMissionBootstrapPatch.cs" />
+    <Compile Include="CouncilCompositionChanged_AssistMissionPatch.cs" />
     <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
     <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
     <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
     <Compile Include="FinalizeCouncilorMissions_AssistPriorityPatch.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="TICouncilorState_CompleteMissionPatch.cs" />
+    <Compile Include="TICouncilorState_AdvisingBonusPatch.cs" />
     <Compile Include="TICouncilorState_GetPossibleMissionListPatch.cs" />
     <Compile Include="TIFactionState_ControlPointMaintenanceCapPatch.cs" />
     <Compile Include="TIMissionCondition_MyFactionCouncilor.cs" />
@@ -86,16 +87,21 @@
     <Compile Include="TIMissionEffect_Assist.cs" />
     <Compile Include="TIMissionModifier_AssistFlat.cs" />
     <Compile Include="TIMissionModifier_AssistStat.cs" />
+    <Compile Include="TIMissionPhaseState_StartofTurnBookkeepingPatch.cs" />
     <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
     <Compile Include="TIMissionTemplate_Assist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ADVISE_MISSION_COMPARISON.md" />
+    <None Include="ADVISE_TECHNICAL_DEEPDIVE.md" />
+    <None Include="ADVISINGBONUS_FREQUENCY.md" />
     <None Include="API_REFERENCE.md" />
     <None Include="ARCHITECTURE.md" />
     <None Include="DEVELOPER_GUIDE.md" />
     <None Include="DOCUMENTATION_COMPLETE.md" />
     <None Include="DOCUMENTATION_INDEX.md" />
+    <None Include="MISSION_PHASE_COMPLETION_PATCH_ANALYSIS.md" />
     <None Include="QUICK_REFERENCE.md" />
     <None Include="README.md" />
     <None Include="TIMissionTemplate.en" />

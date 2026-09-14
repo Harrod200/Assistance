@@ -25,6 +25,10 @@ namespace Assistance
                 Harmony harmony = new Harmony(modEntry.Info.Id);
                 harmony.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
                 modEntry.Logger.Log("Councilor Assist Mission patches applied.");
+
+                // Initialize event listeners for mission granting
+                CouncilCompositionChanged_AssistMissionPatch.Initialize();
+
                 return true;
             }
             catch (Exception ex)
