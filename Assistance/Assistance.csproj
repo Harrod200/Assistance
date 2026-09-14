@@ -93,17 +93,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ADVISE_MISSION_COMPARISON.md" />
-    <None Include="ADVISE_TECHNICAL_DEEPDIVE.md" />
-    <None Include="ADVISINGBONUS_FREQUENCY.md" />
-    <None Include="API_REFERENCE.md" />
-    <None Include="ARCHITECTURE.md" />
-    <None Include="DEVELOPER_GUIDE.md" />
-    <None Include="DOCUMENTATION_COMPLETE.md" />
-    <None Include="DOCUMENTATION_INDEX.md" />
-    <None Include="MISSION_PHASE_COMPLETION_PATCH_ANALYSIS.md" />
-    <None Include="QUICK_REFERENCE.md" />
-    <None Include="README.md" />
     <None Include="TIMissionTemplate.en" />
   </ItemGroup>
   <ItemGroup>
