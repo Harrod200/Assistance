@@ -91,6 +91,7 @@ namespace Assistance
 
         /// <summary>
         /// Builds a detailed breakdown of attack and defense values and their contributors.
+        /// Handles both councilor vs councilor and councilor vs control point missions.
         /// </summary>
         private static string BuildMissionBreakdown(TIMissionState mission, MissionResult result)
         {
@@ -107,12 +108,13 @@ namespace Assistance
                         councilor?.displayName ?? "NULL", target?.displayName ?? "NULL", targetCouncilor?.displayName ?? "NULL"));
                 }
 
-                if (councilor == null || targetCouncilor == null || !(missionTemplate.resolutionMethod is TIMissionResolution_Contested))
+                // Validate core requirements: councilor must exist, target must exist, must be contested
+                if (councilor == null || target == null || !(missionTemplate.resolutionMethod is TIMissionResolution_Contested))
                 {
                     if (Main.mod != null && Main.settings.debugLogging)
                     {
-                        Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Invalid parameters - councilor: {0}, targetCouncilor: {1}, isContested: {2}",
-                            councilor != null, targetCouncilor != null, missionTemplate.resolutionMethod is TIMissionResolution_Contested));
+                        Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Invalid parameters - councilor: {0}, target: {1}, isContested: {2}",
+                            councilor != null, target != null, missionTemplate.resolutionMethod is TIMissionResolution_Contested));
                     }
                     return string.Empty;
                 }
@@ -158,9 +160,20 @@ namespace Assistance
 
                 breakdown.AppendLine();
                 breakdown.AppendLine("DEFENDING:");
-                breakdown.AppendFormat("  Defender: {0} ({1})\n", targetCouncilor.displayName, primaryDefenderStat);
-                breakdown.AppendFormat("  Base {0}: {1}\n", primaryDefenderStat,
-                    targetCouncilor.GetAttribute(primaryDefenderStat, true, true, true, false, false, false));
+
+                // Handle both councilor and control point targets
+                if (targetCouncilor != null)
+                {
+                    breakdown.AppendFormat("  Defender: {0} ({1})\n", targetCouncilor.displayName, primaryDefenderStat);
+                    breakdown.AppendFormat("  Base {0}: {1}\n", primaryDefenderStat,
+                        targetCouncilor.GetAttribute(primaryDefenderStat, true, true, true, false, false, false));
+                }
+                else
+                {
+                    // Non-councilor target (control point, faction, etc.)
+                    breakdown.AppendFormat("  Defender: {0}\n", target.displayName);
+                    breakdown.AppendLine("  Base Defense: N/A (non-councilor target)");
+                }
 
                 // List defending modifiers
                 if (defendingModifiers.Count > 0)
@@ -168,6 +181,7 @@ namespace Assistance
                     breakdown.AppendLine("  Modifiers:");
                     foreach (TIMissionModifier modifier in defendingModifiers)
                     {
+                        // For non-councilor targets, pass null as councilor parameter where needed
                         float modValue = modifier.GetModifier(targetCouncilor, mission.target, 0f, missionTemplate.primaryResource);
                         breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
                     }
@@ -189,7 +203,7 @@ namespace Assistance
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log(string.Format(
-                        "[MissionDetailBreakdown] Error building breakdown: {0}", ex.Message));
+                        "[MissionDetailBreakdown] Error building breakdown: {0}\n{1}", ex.Message, ex.StackTrace));
                 }
                 return string.Empty;
             }
