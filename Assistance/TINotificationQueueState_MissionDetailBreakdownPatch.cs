@@ -41,15 +41,33 @@ namespace Assistance
             if (!mission.missionTemplate.ContestedMission)
                 return;
 
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Processing contested mission: {0}", mission.displayName));
+            }
+
             // Get the notification queue to find and modify the most recently added item
             TINotificationQueueState notificationQueue = GameStateManager.NotificationQueue();
             if (notificationQueue == null || notificationQueue.notificationQueue.Count == 0)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Notification queue is null or empty");
+                }
                 return;
+            }
 
             // The most recently added item is at index 0 (items are inserted at front)
             NotificationQueueItem recentNotification = notificationQueue.notificationQueue[0];
             if (recentNotification == null || recentNotification.mission != mission)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Notification mismatch - recent: {0}, mission: {1}", 
+                        recentNotification?.mission?.displayName ?? "NULL", mission.displayName));
+                }
                 return;
+            }
 
             // Build the detailed breakdown
             string breakdown = BuildMissionBreakdown(mission, result);
@@ -65,6 +83,10 @@ namespace Assistance
                         mission.displayName));
                 }
             }
+            else if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log("[MissionDetailBreakdown] Failed to build breakdown");
+            }
         }
 
         /// <summary>
@@ -79,8 +101,21 @@ namespace Assistance
                 TIGameState target = mission.target;
                 TICouncilorState targetCouncilor = target as TICouncilorState;
 
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] BuildMissionBreakdown - councilor: {0}, target: {1}, targetCouncilor: {2}",
+                        councilor?.displayName ?? "NULL", target?.displayName ?? "NULL", targetCouncilor?.displayName ?? "NULL"));
+                }
+
                 if (councilor == null || targetCouncilor == null || !(missionTemplate.resolutionMethod is TIMissionResolution_Contested))
+                {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Invalid parameters - councilor: {0}, targetCouncilor: {1}, isContested: {2}",
+                            councilor != null, targetCouncilor != null, missionTemplate.resolutionMethod is TIMissionResolution_Contested));
+                    }
                     return string.Empty;
+                }
 
                 TIMissionResolution_Contested contestedResolution = missionTemplate.resolutionMethod as TIMissionResolution_Contested;
 
@@ -89,6 +124,12 @@ namespace Assistance
                     missionTemplate, councilor, target, 0f);
                 List<TIMissionModifier> defendingModifiers = contestedResolution.GetDefendingNonZeroModifiers(
                     missionTemplate, councilor, target, 0f);
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Modifiers - attacking: {0}, defending: {1}",
+                        attackingModifiers?.Count ?? 0, defendingModifiers?.Count ?? 0));
+                }
 
                 // Build header
                 StringBuilder breakdown = new StringBuilder();
@@ -135,6 +176,11 @@ namespace Assistance
                 breakdown.AppendLine();
                 breakdown.AppendFormat("Success Chance: {0:P2}", result.successChance);
                 breakdown.AppendFormat(" | Roll: {0:P2}", result.roll);
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Successfully built breakdown");
+                }
 
                 return breakdown.ToString();
             }
