@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
@@ -101,7 +100,12 @@ namespace Assistance
             }
 
             // Build the detailed breakdown
-            string breakdown = BuildMissionBreakdown(mission, result);
+            string breakdown = BuildMissionBreakdown(mission, result, heldTargetFaction);
+
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] heldTargetFaction: {0}", heldTargetFaction?.displayName ?? "NULL"));
+            }
             if (!string.IsNullOrEmpty(breakdown))
             {
                 // Append breakdown to the existing detail text
@@ -126,11 +130,13 @@ namespace Assistance
             }
         }
 
+
+
         /// <summary>
         /// Builds a detailed breakdown of attack and defense values and their contributors.
         /// Handles both councilor vs councilor and councilor vs control point missions.
         /// </summary>
-        private static string BuildMissionBreakdown(TIMissionState mission, MissionResult result)
+        private static string BuildMissionBreakdown(TIMissionState mission, MissionResult result, TIFactionState defendingFaction = null)
         {
             try
             {
@@ -144,6 +150,8 @@ namespace Assistance
                 TIGameState target = mission.target;
                 TICouncilorState targetCouncilor = target as TICouncilorState;
 
+                // defendingFaction is already provided by the game via the parameter
+
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Mission template: {0}", missionTemplate?.friendlyName ?? "NULL"));
@@ -151,6 +159,7 @@ namespace Assistance
                     Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Target: {0}", target?.displayName ?? "NULL"));
                     Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Target type: {0}", target != null ? target.GetType().Name : "NULL"));
                     Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Target is councilor: {0}", targetCouncilor != null));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Defending faction after resolution: {0}", defendingFaction?.displayName ?? "NULL"));
                 }
 
                 // Validate core requirements: councilor must exist, target must exist, must be contested
@@ -173,14 +182,25 @@ namespace Assistance
 
                 TIMissionResolution_Contested contestedResolution = missionTemplate.resolutionMethod as TIMissionResolution_Contested;
 
-                // Get attacking and defending modifiers
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    Main.mod.Logger.Log("[MissionDetailBreakdown] Calling GetAttackingNonZeroModifiers...");
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Retrieving attacking modifiers...");
                 }
 
-                List<TIMissionModifier> attackingModifiers = contestedResolution.GetAttackingNonZeroModifiers(
-                    missionTemplate, councilor, target, 0f);
+                // Retrieve attacking modifiers from the cache (populated during mission calculation)
+                List<TIMissionModifier> attackingModifiers = MissionCalculationCache.GetCachedAttackingModifiers(
+                    missionTemplate, councilor, target);
+
+                // Fallback to GetNonZeroModifiers if not in cache (shouldn't happen in normal flow)
+                if (attackingModifiers == null)
+                {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log("[MissionDetailBreakdown] Attacking modifiers not in cache, using fallback");
+                    }
+                    attackingModifiers = contestedResolution.GetAttackingNonZeroModifiers(
+                        missionTemplate, councilor, target, 0f) ?? new List<TIMissionModifier>();
+                }
 
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
@@ -196,11 +216,23 @@ namespace Assistance
 
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    Main.mod.Logger.Log("[MissionDetailBreakdown] Calling GetDefendingNonZeroModifiers...");
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Retrieving defending modifiers...");
                 }
 
-                List<TIMissionModifier> defendingModifiers = contestedResolution.GetDefendingNonZeroModifiers(
-                    missionTemplate, councilor, target, 0f);
+                // Retrieve defending modifiers from the cache (populated during mission calculation)
+                List<TIMissionModifier> defendingModifiers = MissionCalculationCache.GetCachedDefendingModifiers(
+                    missionTemplate, councilor, target);
+
+                // Fallback to GetNonZeroModifiers if not in cache (shouldn't happen in normal flow)
+                if (defendingModifiers == null)
+                {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log("[MissionDetailBreakdown] Defending modifiers not in cache, using fallback");
+                    }
+                    defendingModifiers = contestedResolution.GetDefendingNonZeroModifiers(
+                        missionTemplate, councilor, target, 0f) ?? new List<TIMissionModifier>();
+                }
 
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
@@ -218,30 +250,17 @@ namespace Assistance
                 StringBuilder breakdown = new StringBuilder();
                 breakdown.AppendLine("═══ ATTACK / DEFENSE BREAKDOWN ═══");
 
-                // Get primary attacking stat
-                CouncilorAttribute primaryAttackerStat = missionTemplate.primaryAttackerStat;
-                CouncilorAttribute primaryDefenderStat = missionTemplate.primaryDefenderStat();
-
                 // Calculate attacking totals
-                float baseAttackValue = councilor.GetAttribute(primaryAttackerStat, true, true, true, false, false, false);
                 float attackModifierTotal = 0f;
-                float assistBonusAttack = AssistBonusTracker.GetStatBonus(councilor, primaryAttackerStat);
+                float assistBonusAttack = AssistBonusTracker.GetStatBonus(councilor, missionTemplate.primaryAttackerStat);
 
                 breakdown.AppendLine();
                 breakdown.AppendLine("ATTACKING:");
-                breakdown.AppendFormat("  Attacker: {0} ({1})\n", councilor.displayName, primaryAttackerStat);
-                breakdown.AppendFormat("  Base {0}: {1:0.00}\n", primaryAttackerStat, baseAttackValue);
+                breakdown.AppendFormat("  Attacker: {0}\n", councilor.displayName);
 
-                // Show assist bonus
-                if (assistBonusAttack > 0)
-                {
-                    breakdown.AppendFormat("  Assist Bonus: {0:+0.00}\n", assistBonusAttack);
-                }
-
-                // List attacking modifiers
+                // List attacking modifiers (which already include the base stat)
                 if (attackingModifiers.Count > 0)
                 {
-                    breakdown.AppendLine("  Modifiers:");
                     foreach (TIMissionModifier modifier in attackingModifiers)
                     {
                         try
@@ -263,8 +282,14 @@ namespace Assistance
                     }
                 }
 
-                // Show total attack
-                float totalAttackValue = baseAttackValue + assistBonusAttack + attackModifierTotal;
+                // Show assist bonus separately
+                if (assistBonusAttack > 0)
+                {
+                    breakdown.AppendFormat("    • Assist Bonus: {0:+0.00}\n", assistBonusAttack);
+                }
+
+                // Show total attack (modifiers already include the base stat)
+                float totalAttackValue = attackModifierTotal + assistBonusAttack;
                 breakdown.AppendFormat("  Total Attack: {0:0.00}\n", totalAttackValue);
 
                 breakdown.AppendLine();
@@ -272,71 +297,108 @@ namespace Assistance
 
                 // Calculate defending totals
                 float defendModifierTotal = 0f;
-                float defensiveBaseline = 0f;
 
                 // Handle both councilor and control point targets
                 if (targetCouncilor != null)
                 {
-                    float baseDefenseValue = targetCouncilor.GetAttribute(primaryDefenderStat, true, true, true, false, false, false);
-                    breakdown.AppendFormat("  Defender: {0} ({1})\n", targetCouncilor.displayName, primaryDefenderStat);
-                    breakdown.AppendFormat("  Base {0}: {1:0.00}\n", primaryDefenderStat, baseDefenseValue);
-                    defensiveBaseline = baseDefenseValue;
+                    breakdown.AppendFormat("  Defender: {0}\n", targetCouncilor.displayName);
                 }
                 else
                 {
                     // Non-councilor target (control point, faction, etc.)
                     breakdown.AppendFormat("  Defender: {0}\n", target.displayName);
-
-                    // Try to get baseline difficulty for control points
-                    TIControlPoint controlPoint = target as TIControlPoint;
-                    if (controlPoint != null)
-                    {
-                        try
-                        {
-                            // Get the baseline difficulty of the control point for this mission
-                            float baselineDifficulty = contestedResolution.Difficulty(missionTemplate, null, target, 0f);
-                            breakdown.AppendFormat("  Base Defense: {0:0.00} (control point baseline)\n", baselineDifficulty);
-                            defensiveBaseline = baselineDifficulty;
-                        }
-                        catch
-                        {
-                            breakdown.AppendLine("  Base Defense: N/A (control point)");
-                        }
-                    }
-                    else
-                    {
-                        breakdown.AppendLine("  Base Defense: N/A (non-councilor target)");
-                    }
                 }
 
-                // List defending modifiers
+                // List defending modifiers (which already include the base defense stat)
                 if (defendingModifiers.Count > 0)
                 {
-                    breakdown.AppendLine("  Modifiers:");
                     foreach (TIMissionModifier modifier in defendingModifiers)
                     {
                         try
                         {
-                            // For non-councilor targets, pass null as councilor parameter where needed
+                            // Try with the target councilor first (for councilor vs councilor missions)
                             float modValue = modifier.GetModifier(targetCouncilor, mission.target, 0f, missionTemplate.primaryResource);
                             breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
                             defendModifierTotal += modValue;
                         }
                         catch (Exception modEx)
                         {
-                            if (Main.mod != null && Main.settings.debugLogging)
+                            // For control points, some modifiers may need the defending faction instead
+                            if (targetCouncilor == null && mission.target is TIControlPoint && defendingFaction != null)
                             {
-                                Main.mod.Logger.Log(string.Format(
-                                    "[MissionDetailBreakdown] Skipping defending modifier '{0}' (incompatible with target type): {1}",
-                                    modifier.displayName, modEx.Message));
+                                try
+                                {
+                                    // Get the leader of the defending faction to use for the modifier
+                                    TICouncilorState defendingLeader = null;
+                                    // Try to get the faction leader or councilors
+                                    var activeCouncilors = defendingFaction.GetType().GetProperty("activeCouncilors", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                                    if (activeCouncilors != null)
+                                    {
+                                        var councilors = activeCouncilors.GetValue(defendingFaction) as System.Collections.IList;
+                                        if (councilors != null && councilors.Count > 0)
+                                        {
+                                            defendingLeader = councilors[0] as TICouncilorState;
+                                        }
+                                        else if (Main.mod != null && Main.settings.debugLogging)
+                                        {
+                                            Main.mod.Logger.Log(string.Format(
+                                                "[MissionDetailBreakdown] activeCouncilors property found but empty or null (count: {0})",
+                                                councilors?.Count ?? -1));
+                                        }
+                                    }
+                                    else if (Main.mod != null && Main.settings.debugLogging)
+                                    {
+                                        Main.mod.Logger.Log("[MissionDetailBreakdown] activeCouncilors property not found on defending faction");
+                                    }
+
+                                    if (defendingLeader != null)
+                                    {
+                                        // Try calling the modifier with the defending faction's leader
+                                        float modValue = modifier.GetModifier(defendingLeader, mission.target, 0f, missionTemplate.primaryResource);
+                                        breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                                        defendModifierTotal += modValue;
+                                    }
+                                    else
+                                    {
+                                        if (Main.mod != null && Main.settings.debugLogging)
+                                        {
+                                            Main.mod.Logger.Log(string.Format(
+                                                "[MissionDetailBreakdown] No defending leader found for modifier '{0}'",
+                                                modifier.displayName));
+                                        }
+                                        throw modEx; // No defending leader found
+                                    }
+                                }
+                                catch (Exception innerEx)
+                                {
+                                    if (Main.mod != null && Main.settings.debugLogging)
+                                    {
+                                        Main.mod.Logger.Log(string.Format(
+                                            "[MissionDetailBreakdown] Skipping defending modifier '{0}' (fallback failed): {1}",
+                                            modifier.displayName, innerEx.Message));
+                                    }
+                                    // Skip this modifier - can't get defending councilor or modifier doesn't support it
+                                }
                             }
-                            // Skip this modifier silently - some modifiers don't support non-councilor targets
+                            else
+                            {
+                                if (Main.mod != null && Main.settings.debugLogging)
+                                {
+                                    Main.mod.Logger.Log(string.Format(
+                                        "[MissionDetailBreakdown] Skipping defending modifier '{0}' (no fallback): targetCouncilor={1}, isControlPoint={2}, defendingFaction={3}",
+                                        modifier.displayName, 
+                                        targetCouncilor != null,
+                                        mission.target is TIControlPoint,
+                                        defendingFaction != null));
+                                }
+                                // Skip this modifier silently - some modifiers don't support non-councilor targets
+                            }
                         }
                     }
                 }
 
-                // Show total defense
-                float totalDefenseValue = defensiveBaseline + defendModifierTotal;
+                // Show total defense (modifiers already include the baseline)
+                float totalDefenseValue = defendModifierTotal;
                 breakdown.AppendFormat("  Total Defense: {0:0.00}\n", totalDefenseValue);
 
                 breakdown.AppendLine();
