@@ -67,13 +67,34 @@ namespace Assistance
         /// </summary>
         public static int GetStatBonus(TICouncilorState councilor, CouncilorAttribute stat)
         {
-            if (councilor == null || !trackedBonuses.ContainsKey(councilor))
+            if (councilor == null)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log("[AssistBonusTracker] GetStatBonus called with NULL councilor!");
                 return 0;
+            }
+
+            if (!trackedBonuses.ContainsKey(councilor))
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetStatBonus: No bonuses tracked for '{0}' at all", councilor.displayName));
+                return 0;
+            }
 
             if (!trackedBonuses[councilor].ContainsKey(stat))
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetStatBonus: No {0} bonus for '{1}' (has other stats)", 
+                        stat, councilor.displayName));
                 return 0;
+            }
 
-            return trackedBonuses[councilor][stat];
+            int bonus = trackedBonuses[councilor][stat];
+            if (Main.mod != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetStatBonus: '{0}' {1} = {2}", 
+                    councilor.displayName, stat, bonus));
+
+            return bonus;
         }
 
         /// <summary>

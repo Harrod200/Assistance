@@ -34,12 +34,32 @@ namespace Assistance
             bool spy = false,
             string abortedReason = "")
         {
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log("[MissionDetailBreakdown] ===== BREAKDOWN PATCH ENTRY =====");
+                Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Mission: {0}", mission?.displayName ?? "NULL"));
+                Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Result outcome: {0}", mission != null ? result.missionOutcome.ToString() : "NULL"));
+                Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Is contested: {0}", mission != null ? mission.missionTemplate.ContestedMission : false));
+            }
+
             // Only enhance contested missions (not aborted ones)
             if (mission == null || result.missionOutcome == TIMissionOutcome.Aborted)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] EARLY EXIT: mission null or aborted");
+                }
                 return;
+            }
 
             if (!mission.missionTemplate.ContestedMission)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] EARLY EXIT: mission not contested");
+                }
                 return;
+            }
 
             if (Main.mod != null && Main.settings.debugLogging)
             {
@@ -52,9 +72,14 @@ namespace Assistance
             {
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    Main.mod.Logger.Log("[MissionDetailBreakdown] Notification queue is null or empty");
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] EARLY EXIT: Notification queue is null or empty");
                 }
                 return;
+            }
+
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Notification queue has {0} items", notificationQueue.notificationQueue.Count));
             }
 
             // The most recently added item is at index 0 (items are inserted at front)
@@ -63,10 +88,20 @@ namespace Assistance
             {
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Notification mismatch - recent: {0}, mission: {1}", 
-                        recentNotification?.mission?.displayName ?? "NULL", mission.displayName));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] EARLY EXIT: Notification mismatch"));
+                    Main.mod.Logger.Log(string.Format("  Recent notification mission: {0}", recentNotification?.mission?.displayName ?? "NULL"));
+                    Main.mod.Logger.Log(string.Format("  Expected mission: {0}", mission.displayName));
+                    if (recentNotification != null)
+                    {
+                        Main.mod.Logger.Log(string.Format("  Notification type: {0}", recentNotification.itemType));
+                    }
                 }
                 return;
+            }
+
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log("[MissionDetailBreakdown] Notification found, building breakdown...");
             }
 
             // Build the detailed breakdown
@@ -79,13 +114,19 @@ namespace Assistance
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
                     Main.mod.Logger.Log(string.Format(
-                        "[MissionDetailBreakdown] Enhanced mission '{0}' with attack/defense breakdown",
+                        "[MissionDetailBreakdown] SUCCESS: Enhanced mission '{0}' with attack/defense breakdown",
                         mission.displayName));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Breakdown length: {0} chars", breakdown.Length));
                 }
             }
             else if (Main.mod != null && Main.settings.debugLogging)
             {
-                Main.mod.Logger.Log("[MissionDetailBreakdown] Failed to build breakdown");
+                Main.mod.Logger.Log("[MissionDetailBreakdown] WARNING: Failed to build breakdown - returned empty string");
+            }
+
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log("[MissionDetailBreakdown] ===== BREAKDOWN PATCH EXIT =====");
             }
         }
 
@@ -97,6 +138,11 @@ namespace Assistance
         {
             try
             {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] ===== BUILD BREAKDOWN START =====");
+                }
+
                 TIMissionTemplate missionTemplate = mission.missionTemplate;
                 TICouncilorState councilor = mission.councilor;
                 TIGameState target = mission.target;
@@ -104,8 +150,11 @@ namespace Assistance
 
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] BuildMissionBreakdown - councilor: {0}, target: {1}, targetCouncilor: {2}",
-                        councilor?.displayName ?? "NULL", target?.displayName ?? "NULL", targetCouncilor?.displayName ?? "NULL"));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Mission template: {0}", missionTemplate?.friendlyName ?? "NULL"));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Councilor (attacker): {0}", councilor?.displayName ?? "NULL"));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Target: {0}", target?.displayName ?? "NULL"));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Target type: {0}", target != null ? target.GetType().Name : "NULL"));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Target is councilor: {0}", targetCouncilor != null));
                 }
 
                 // Validate core requirements: councilor must exist, target must exist, must be contested
@@ -113,24 +162,60 @@ namespace Assistance
                 {
                     if (Main.mod != null && Main.settings.debugLogging)
                     {
-                        Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Invalid parameters - councilor: {0}, target: {1}, isContested: {2}",
-                            councilor != null, target != null, missionTemplate.resolutionMethod is TIMissionResolution_Contested));
+                        Main.mod.Logger.Log("[MissionDetailBreakdown] VALIDATION FAILED:");
+                        Main.mod.Logger.Log(string.Format("  Councilor null: {0}", councilor == null));
+                        Main.mod.Logger.Log(string.Format("  Target null: {0}", target == null));
+                        Main.mod.Logger.Log(string.Format("  Is contested: {0}", missionTemplate.resolutionMethod is TIMissionResolution_Contested));
                     }
                     return string.Empty;
+                }
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Validation passed, retrieving modifiers...");
                 }
 
                 TIMissionResolution_Contested contestedResolution = missionTemplate.resolutionMethod as TIMissionResolution_Contested;
 
                 // Get attacking and defending modifiers
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Calling GetAttackingNonZeroModifiers...");
+                }
+
                 List<TIMissionModifier> attackingModifiers = contestedResolution.GetAttackingNonZeroModifiers(
                     missionTemplate, councilor, target, 0f);
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Attacking modifiers count: {0}", attackingModifiers?.Count ?? 0));
+                    if (attackingModifiers != null)
+                    {
+                        foreach (var mod in attackingModifiers)
+                        {
+                            Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
+                        }
+                    }
+                }
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[MissionDetailBreakdown] Calling GetDefendingNonZeroModifiers...");
+                }
+
                 List<TIMissionModifier> defendingModifiers = contestedResolution.GetDefendingNonZeroModifiers(
                     missionTemplate, councilor, target, 0f);
 
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
-                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Modifiers - attacking: {0}, defending: {1}",
-                        attackingModifiers?.Count ?? 0, defendingModifiers?.Count ?? 0));
+                    Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Defending modifiers count: {0}", defendingModifiers?.Count ?? 0));
+                    if (defendingModifiers != null)
+                    {
+                        foreach (var mod in defendingModifiers)
+                        {
+                            Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
+                        }
+                    }
                 }
 
                 // Build header

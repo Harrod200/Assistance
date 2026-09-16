@@ -73,32 +73,49 @@ namespace Assistance
             // Log entry to contested mission check
             if (Main.mod != null && Main.settings.debugLogging)
             {
-                Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] SumAttackingModifiers called - Mission: {0}, Attacker: {1}, Target: {2}, Result before bonus: {3}",
-                    mission != null ? mission.friendlyName : "NULL",
-                    councilor != null ? councilor.displayName : "NULL",
-                    target != null ? (target.isCouncilorState ? ((TICouncilorState)target).displayName : target.ToString()) : "NULL",
-                    __result));
+                Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
+                Main.mod.Logger.Log("[AssistBonusTracker] SumAttackingModifiers ENTRY");
+                Main.mod.Logger.Log(string.Format("  Mission: {0}", mission != null ? mission.friendlyName : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Attacker: {0}", councilor != null ? councilor.displayName : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Target type: {0}", target != null ? target.GetType().Name : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Target: {0}", target != null ? target.displayName : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Result before: {0}", __result));
             }
 
             if (councilor == null || mission == null)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log("[AssistBonusTracker] Attacking councilor or mission is NULL, skipping bonus application");
+                {
+                    Main.mod.Logger.Log("[AssistBonusTracker] EARLY EXIT: Attacking councilor or mission is NULL");
+                    Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
+                }
                 return;
             }
 
             // Get the mission's attacking attribute (e.g., Persuasion, Command)
             CouncilorAttribute missionAttribute = GetMissionAttackerAttribute(mission);
 
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("  Mission attacking attribute: {0}", missionAttribute));
+            }
+
             // Apply only the bonus for this specific stat
             int statBonus = AssistBonusTracker.GetStatBonus(councilor, missionAttribute);
+
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("  Stat bonus for {0}: {1}", missionAttribute, statBonus));
+            }
 
             if (statBonus <= 0)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] No {0} assist bonus for attacker '{1}' (bonus: {2})", 
+                {
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] NO BONUS: {0} assist bonus for attacker '{1}' is {2}", 
                         missionAttribute, councilor.displayName, statBonus));
+                    Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
+                }
                 return;
             }
 
@@ -109,8 +126,9 @@ namespace Assistance
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] APPLIED {0} {1} assist bonus points to attacking modifier for '{2}' - Result changed from {3} to {4}",
-                    statBonus, missionAttribute, councilor.displayName, originalResult, __result));
+                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to attacking modifier", missionAttribute, statBonus));
+                Main.mod.Logger.Log(string.Format("  Result changed: {0} ? {1}", originalResult, __result));
+                Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
             }
         }
 
@@ -128,36 +146,55 @@ namespace Assistance
             float resourcesSpent,
             ref float __result)
         {
-            // Log entry to contested mission check
+            // Aggressive logging for control point debugging
             if (Main.mod != null && Main.settings.debugLogging)
             {
-                Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] SumDefendingModifiers called - Mission: {0}, Defender: {1}, Target: {2}, Result before bonus: {3}",
-                    mission != null ? mission.friendlyName : "NULL",
-                    councilor != null ? councilor.displayName : "NULL",
-                    target != null ? (target.isCouncilorState ? ((TICouncilorState)target).displayName : target.ToString()) : "NULL",
-                    __result));
+                Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
+                Main.mod.Logger.Log("[AssistBonusTracker] SumDefendingModifiers ENTRY");
+                Main.mod.Logger.Log(string.Format("  Mission: {0}", mission != null ? mission.friendlyName : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Defender: {0}", councilor != null ? councilor.displayName : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Target type: {0}", target != null ? target.GetType().Name : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Target: {0}", target != null ? target.displayName : "NULL"));
+                Main.mod.Logger.Log(string.Format("  Result before: {0}", __result));
+                Main.mod.Logger.Log(string.Format("  Target is TICouncilorState: {0}", target is TICouncilorState));
+                Main.mod.Logger.Log(string.Format("  Target is TIControlPoint: {0}", target is TIControlPoint));
             }
 
             // Check defending councilor and mission - target type doesn't matter (can be councilor or control point)
             if (councilor == null || mission == null)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log("[AssistBonusTracker] Defending councilor or mission is NULL - skipping bonus application");
+                {
+                    Main.mod.Logger.Log("[AssistBonusTracker] EARLY EXIT: Defending councilor or mission is NULL");
+                    Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
+                }
                 return;
             }
 
             // Get the mission's defending attribute (e.g., Persuasion, Command)
             CouncilorAttribute missionAttribute = GetMissionDefenderAttribute(mission);
 
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("  Mission defending attribute: {0}", missionAttribute));
+            }
+
             // Apply only the bonus for this specific stat
             int statBonus = AssistBonusTracker.GetStatBonus(councilor, missionAttribute);
+
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("  Stat bonus for {0}: {1}", missionAttribute, statBonus));
+            }
 
             if (statBonus <= 0)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] No {0} assist bonus for defender '{1}' (bonus: {2})", 
+                {
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] NO BONUS: {0} assist bonus for defender '{1}' is {2}", 
                         missionAttribute, councilor.displayName, statBonus));
+                    Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
+                }
                 return;
             }
 
@@ -168,8 +205,9 @@ namespace Assistance
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] APPLIED {0} {1} assist bonus points to defending modifier for '{2}' - Result changed from {3} to {4}",
-                    statBonus, missionAttribute, councilor.displayName, originalResult, __result));
+                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to defending modifier", missionAttribute, statBonus));
+                Main.mod.Logger.Log(string.Format("  Result changed: {0} ? {1}", originalResult, __result));
+                Main.mod.Logger.Log("???????????????????????????????????????????????????????????????");
             }
         }
     }
