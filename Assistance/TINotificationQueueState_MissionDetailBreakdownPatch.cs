@@ -153,8 +153,22 @@ namespace Assistance
                     breakdown.AppendLine("  Modifiers:");
                     foreach (TIMissionModifier modifier in attackingModifiers)
                     {
-                        float modValue = modifier.GetModifier(councilor, target, 0f, missionTemplate.primaryResource);
-                        breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                        try
+                        {
+                            float modValue = modifier.GetModifier(councilor, target, 0f, missionTemplate.primaryResource);
+                            breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                        }
+                        catch (Exception modEx)
+                        {
+                            if (Main.mod != null && Main.settings.debugLogging)
+                            {
+                                Main.mod.Logger.Log(string.Format(
+                                    "[MissionDetailBreakdown] Error getting attacking modifier '{0}': {1}",
+                                    modifier.displayName, modEx.Message));
+                            }
+                            // Skip this modifier and continue with others
+                            breakdown.AppendFormat("    • {0}: (error calculating)\n", modifier.displayName);
+                        }
                     }
                 }
 
@@ -181,9 +195,23 @@ namespace Assistance
                     breakdown.AppendLine("  Modifiers:");
                     foreach (TIMissionModifier modifier in defendingModifiers)
                     {
-                        // For non-councilor targets, pass null as councilor parameter where needed
-                        float modValue = modifier.GetModifier(targetCouncilor, mission.target, 0f, missionTemplate.primaryResource);
-                        breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                        try
+                        {
+                            // For non-councilor targets, pass null as councilor parameter where needed
+                            float modValue = modifier.GetModifier(targetCouncilor, mission.target, 0f, missionTemplate.primaryResource);
+                            breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                        }
+                        catch (Exception modEx)
+                        {
+                            if (Main.mod != null && Main.settings.debugLogging)
+                            {
+                                Main.mod.Logger.Log(string.Format(
+                                    "[MissionDetailBreakdown] Error getting defending modifier '{0}': {1}",
+                                    modifier.displayName, modEx.Message));
+                            }
+                            // Skip this modifier and continue with others
+                            breakdown.AppendFormat("    • {0}: (error calculating)\n", modifier.displayName);
+                        }
                     }
                 }
 
