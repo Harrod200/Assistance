@@ -23,7 +23,7 @@ namespace Assistance
         /// Uses the mission's primaryAttackerStat property which is determined by the mission's
         /// attacking modifiers.
         /// </summary>
-        private static CouncilorAttribute GetMissionAttribute(TIMissionTemplate mission)
+        private static CouncilorAttribute GetMissionAttackerAttribute(TIMissionTemplate mission)
         {
             if (mission == null)
                 return CouncilorAttribute.Persuasion; // Default fallback
@@ -36,6 +36,25 @@ namespace Assistance
                     mission.friendlyName, attackerStat));
 
             return attackerStat;
+        }
+
+        /// <summary>
+        /// Determines which CouncilorAttribute is used by a mission for its defending stat check.
+        /// Uses the mission's primaryDefenderStat() method, which can differ from the attacking
+        /// stat (e.g. an attacker's Persuasion check resolved against a defender's Investigation).
+        /// </summary>
+        private static CouncilorAttribute GetMissionDefenderAttribute(TIMissionTemplate mission)
+        {
+            if (mission == null)
+                return CouncilorAttribute.Persuasion; // Default fallback
+
+            CouncilorAttribute defenderStat = mission.primaryDefenderStat();
+
+            if (Main.mod != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Mission '{0}' primary defender stat: {1}", 
+                    mission.friendlyName, defenderStat));
+
+            return defenderStat;
         }
 
         /// <summary>
@@ -70,7 +89,7 @@ namespace Assistance
             }
 
             // Get the mission's attacking attribute (e.g., Persuasion, Command)
-            CouncilorAttribute missionAttribute = GetMissionAttribute(mission);
+            CouncilorAttribute missionAttribute = GetMissionAttackerAttribute(mission);
 
             // Apply only the bonus for this specific stat
             int statBonus = AssistBonusTracker.GetStatBonus(councilor, missionAttribute);
@@ -98,6 +117,7 @@ namespace Assistance
         /// <summary>
         /// Applies assist bonus to defending modifiers when the assisted councilor is attacked.
         /// Only the bonus for the mission's specific stat attribute is applied.
+        /// Works for both councilor vs councilor and councilor vs control point missions.
         /// </summary>
         [HarmonyPatch(typeof(TIMissionResolution_Contested), nameof(TIMissionResolution_Contested.SumDefendingModifiers))]
         [HarmonyPostfix]
@@ -119,32 +139,25 @@ namespace Assistance
                     __result));
             }
 
-            if (target == null || !target.isCouncilorState || mission == null)
+            // Check defending councilor and mission - target type doesn't matter (can be councilor or control point)
+            if (councilor == null || mission == null)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log("[AssistBonusTracker] Target is NULL, not a councilor, or mission is NULL - skipping bonus application");
-                return;
-            }
-
-            TICouncilorState targetCouncilor = target as TICouncilorState;
-            if (targetCouncilor == null)
-            {
-                if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log("[AssistBonusTracker] Failed to cast target to TICouncilorState");
+                    Main.mod.Logger.Log("[AssistBonusTracker] Defending councilor or mission is NULL - skipping bonus application");
                 return;
             }
 
             // Get the mission's defending attribute (e.g., Persuasion, Command)
-            CouncilorAttribute missionAttribute = GetMissionAttribute(mission);
+            CouncilorAttribute missionAttribute = GetMissionDefenderAttribute(mission);
 
             // Apply only the bonus for this specific stat
-            int statBonus = AssistBonusTracker.GetStatBonus(targetCouncilor, missionAttribute);
+            int statBonus = AssistBonusTracker.GetStatBonus(councilor, missionAttribute);
 
             if (statBonus <= 0)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
                     Main.mod.Logger.Log(string.Format("[AssistBonusTracker] No {0} assist bonus for defender '{1}' (bonus: {2})", 
-                        missionAttribute, targetCouncilor.displayName, statBonus));
+                        missionAttribute, councilor.displayName, statBonus));
                 return;
             }
 
@@ -156,7 +169,7 @@ namespace Assistance
             {
                 Main.mod.Logger.Log(string.Format(
                     "[AssistBonusTracker] APPLIED {0} {1} assist bonus points to defending modifier for '{2}' - Result changed from {3} to {4}",
-                    statBonus, missionAttribute, targetCouncilor.displayName, originalResult, __result));
+                    statBonus, missionAttribute, councilor.displayName, originalResult, __result));
             }
         }
     }
