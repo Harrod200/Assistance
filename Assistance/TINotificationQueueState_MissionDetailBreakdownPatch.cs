@@ -91,10 +91,6 @@ namespace Assistance
                     Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] EARLY EXIT: Notification mismatch"));
                     Main.mod.Logger.Log(string.Format("  Recent notification mission: {0}", recentNotification?.mission?.displayName ?? "NULL"));
                     Main.mod.Logger.Log(string.Format("  Expected mission: {0}", mission.displayName));
-                    if (recentNotification != null)
-                    {
-                        Main.mod.Logger.Log(string.Format("  Notification type: {0}", recentNotification.itemType));
-                    }
                 }
                 return;
             }
@@ -226,11 +222,21 @@ namespace Assistance
                 CouncilorAttribute primaryAttackerStat = missionTemplate.primaryAttackerStat;
                 CouncilorAttribute primaryDefenderStat = missionTemplate.primaryDefenderStat();
 
+                // Calculate attacking totals
+                float baseAttackValue = councilor.GetAttribute(primaryAttackerStat, true, true, true, false, false, false);
+                float attackModifierTotal = 0f;
+                float assistBonusAttack = AssistBonusTracker.GetStatBonus(councilor, primaryAttackerStat);
+
                 breakdown.AppendLine();
                 breakdown.AppendLine("ATTACKING:");
                 breakdown.AppendFormat("  Attacker: {0} ({1})\n", councilor.displayName, primaryAttackerStat);
-                breakdown.AppendFormat("  Base {0}: {1}\n", primaryAttackerStat, 
-                    councilor.GetAttribute(primaryAttackerStat, true, true, true, false, false, false));
+                breakdown.AppendFormat("  Base {0}: {1:0.00}\n", primaryAttackerStat, baseAttackValue);
+
+                // Show assist bonus
+                if (assistBonusAttack > 0)
+                {
+                    breakdown.AppendFormat("  Assist Bonus: {0:+0.00}\n", assistBonusAttack);
+                }
 
                 // List attacking modifiers
                 if (attackingModifiers.Count > 0)
@@ -242,6 +248,7 @@ namespace Assistance
                         {
                             float modValue = modifier.GetModifier(councilor, target, 0f, missionTemplate.primaryResource);
                             breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                            attackModifierTotal += modValue;
                         }
                         catch (Exception modEx)
                         {
@@ -256,21 +263,50 @@ namespace Assistance
                     }
                 }
 
+                // Show total attack
+                float totalAttackValue = baseAttackValue + assistBonusAttack + attackModifierTotal;
+                breakdown.AppendFormat("  Total Attack: {0:0.00}\n", totalAttackValue);
+
                 breakdown.AppendLine();
                 breakdown.AppendLine("DEFENDING:");
+
+                // Calculate defending totals
+                float defendModifierTotal = 0f;
+                float defensiveBaseline = 0f;
 
                 // Handle both councilor and control point targets
                 if (targetCouncilor != null)
                 {
+                    float baseDefenseValue = targetCouncilor.GetAttribute(primaryDefenderStat, true, true, true, false, false, false);
                     breakdown.AppendFormat("  Defender: {0} ({1})\n", targetCouncilor.displayName, primaryDefenderStat);
-                    breakdown.AppendFormat("  Base {0}: {1}\n", primaryDefenderStat,
-                        targetCouncilor.GetAttribute(primaryDefenderStat, true, true, true, false, false, false));
+                    breakdown.AppendFormat("  Base {0}: {1:0.00}\n", primaryDefenderStat, baseDefenseValue);
+                    defensiveBaseline = baseDefenseValue;
                 }
                 else
                 {
                     // Non-councilor target (control point, faction, etc.)
                     breakdown.AppendFormat("  Defender: {0}\n", target.displayName);
-                    breakdown.AppendLine("  Base Defense: N/A (non-councilor target)");
+
+                    // Try to get baseline difficulty for control points
+                    TIControlPoint controlPoint = target as TIControlPoint;
+                    if (controlPoint != null)
+                    {
+                        try
+                        {
+                            // Get the baseline difficulty of the control point for this mission
+                            float baselineDifficulty = contestedResolution.Difficulty(missionTemplate, null, target, 0f);
+                            breakdown.AppendFormat("  Base Defense: {0:0.00} (control point baseline)\n", baselineDifficulty);
+                            defensiveBaseline = baselineDifficulty;
+                        }
+                        catch
+                        {
+                            breakdown.AppendLine("  Base Defense: N/A (control point)");
+                        }
+                    }
+                    else
+                    {
+                        breakdown.AppendLine("  Base Defense: N/A (non-councilor target)");
+                    }
                 }
 
                 // List defending modifiers
@@ -284,6 +320,7 @@ namespace Assistance
                             // For non-councilor targets, pass null as councilor parameter where needed
                             float modValue = modifier.GetModifier(targetCouncilor, mission.target, 0f, missionTemplate.primaryResource);
                             breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
+                            defendModifierTotal += modValue;
                         }
                         catch (Exception modEx)
                         {
@@ -297,6 +334,10 @@ namespace Assistance
                         }
                     }
                 }
+
+                // Show total defense
+                float totalDefenseValue = defensiveBaseline + defendModifierTotal;
+                breakdown.AppendFormat("  Total Defense: {0:0.00}\n", totalDefenseValue);
 
                 breakdown.AppendLine();
                 breakdown.AppendFormat("Success Chance: {0:P2}", result.successChance);

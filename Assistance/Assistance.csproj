@@ -91,6 +91,7 @@
     <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
     <Compile Include="TIMissionTemplate_Assist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" xmlns="" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TIMissionTemplate.en" />
