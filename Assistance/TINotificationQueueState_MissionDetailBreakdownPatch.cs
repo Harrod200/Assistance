@@ -163,11 +163,10 @@ namespace Assistance
                             if (Main.mod != null && Main.settings.debugLogging)
                             {
                                 Main.mod.Logger.Log(string.Format(
-                                    "[MissionDetailBreakdown] Error getting attacking modifier '{0}': {1}",
+                                    "[MissionDetailBreakdown] Skipping attacking modifier '{0}' (incompatible with target type): {1}",
                                     modifier.displayName, modEx.Message));
                             }
-                            // Skip this modifier and continue with others
-                            breakdown.AppendFormat("    • {0}: (error calculating)\n", modifier.displayName);
+                            // Skip this modifier silently - some modifiers don't support non-councilor targets
                         }
                     }
                 }
@@ -206,11 +205,10 @@ namespace Assistance
                             if (Main.mod != null && Main.settings.debugLogging)
                             {
                                 Main.mod.Logger.Log(string.Format(
-                                    "[MissionDetailBreakdown] Error getting defending modifier '{0}': {1}",
+                                    "[MissionDetailBreakdown] Skipping defending modifier '{0}' (incompatible with target type): {1}",
                                     modifier.displayName, modEx.Message));
                             }
-                            // Skip this modifier and continue with others
-                            breakdown.AppendFormat("    • {0}: (error calculating)\n", modifier.displayName);
+                            // Skip this modifier silently - some modifiers don't support non-councilor targets
                         }
                     }
                 }
