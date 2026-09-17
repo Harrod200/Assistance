@@ -383,13 +383,13 @@ namespace Assistance
                     }
                 }
 
-                // Get assist bonus for defending side (only if target is a councilor being assisted)
+                // Get assist bonus for defending side (same approach as attacking)
                 float assistBonusDefend = 0;
-                if (targetCouncilor != null)
+                if (defendingCouncilor != null)
                 {
-                    // For councilor vs councilor missions, check if the defending councilor has assist bonuses
+                    // Check if the defending councilor has assist bonuses
                     CouncilorAttribute defenderStat = missionTemplate.primaryDefenderStat();
-                    assistBonusDefend = AssistBonusTracker.GetStatBonus(targetCouncilor, defenderStat);
+                    assistBonusDefend = AssistBonusTracker.GetStatBonus(defendingCouncilor, defenderStat);
 
                     // Show assist bonus for defending side if present
                     if (assistBonusDefend > 0)
