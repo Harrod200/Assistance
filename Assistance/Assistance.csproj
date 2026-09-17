@@ -46,6 +46,7 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityModManager">
       <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
@@ -92,7 +93,7 @@
     <Compile Include="TIMissionResolution_Contested_ModifierCachePatch.cs" />
     <Compile Include="TIMissionTemplate_Assist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" xmlns="" />
+    <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TIMissionTemplate.en" />

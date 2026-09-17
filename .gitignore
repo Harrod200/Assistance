@@ -360,4 +360,7 @@ MigrationBackup/
 .ionide/
 
 # Fody - auto-generated XML schema
+
+# Development chatlogs and documentation
+Chatlogs/
 FodyWeavers.xsd

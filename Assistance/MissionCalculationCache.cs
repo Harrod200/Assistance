@@ -49,6 +49,8 @@ namespace Assistance
         /// <summary>
         /// Caches the attacking modifiers used during mission calculation.
         /// Called from SumAttackingModifiers_Postfix during mission resolution.
+        /// Only stores the first version or versions with fewer modifiers to avoid
+        /// capturing modifiers added after state changes (e.g., target being detained).
         /// </summary>
         public static void CacheAttackingModifiers(
             TIMissionTemplate mission,
@@ -66,26 +68,52 @@ namespace Assistance
             if (!calculationCache.ContainsKey(key))
             {
                 calculationCache[key] = new MissionModifierSnapshot { CreatedAt = DateTime.UtcNow };
+                // First cache entry - store these modifiers
+                calculationCache[key].AttackingModifiers = new List<TIMissionModifier>(modifiers ?? new List<TIMissionModifier>());
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] Cached {0} attacking modifiers for mission '{1}' (attacker: {2}, target: {3})",
+                        modifiers.Count, mission.friendlyName, councilor.displayName, target.displayName));
+                    foreach (var mod in modifiers)
+                    {
+                        Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
+                    }
+                }
             }
+            else if (calculationCache[key].AttackingModifiers != null && 
+                     modifiers.Count < calculationCache[key].AttackingModifiers.Count)
+            {
+                // Only update if new list has fewer modifiers (likely the original before state changes)
+                int oldCount = calculationCache[key].AttackingModifiers.Count;
+                calculationCache[key].AttackingModifiers = new List<TIMissionModifier>(modifiers);
 
-            // Store a copy of the modifiers list as it was during calculation
-            calculationCache[key].AttackingModifiers = new List<TIMissionModifier>(modifiers ?? new List<TIMissionModifier>());
-
-            if (Main.mod != null && Main.settings.debugLogging)
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] Updated attacking modifiers for mission '{0}' ({1} -> {2} modifiers)",
+                        mission.friendlyName, 
+                        oldCount,
+                        modifiers.Count));
+                }
+            }
+            else if (Main.mod != null && Main.settings.debugLogging && 
+                     calculationCache[key].AttackingModifiers != null)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[MissionCalculationCache] Cached {0} attacking modifiers for mission '{1}' (attacker: {2}, target: {3})",
-                    modifiers.Count, mission.friendlyName, councilor.displayName, target.displayName));
-                foreach (var mod in modifiers)
-                {
-                    Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
-                }
+                    "[MissionCalculationCache] Skipping redundant cache update for mission '{0}' (existing: {1}, new: {2} modifiers)",
+                    mission.friendlyName,
+                    calculationCache[key].AttackingModifiers.Count,
+                    modifiers.Count));
             }
         }
 
         /// <summary>
         /// Caches the defending modifiers used during mission calculation.
         /// Called from SumDefendingModifiers_Postfix during mission resolution.
+        /// Only stores the first version or versions with fewer modifiers to avoid
+        /// capturing modifiers added after state changes (e.g., target being detained).
         /// </summary>
         public static void CacheDefendingModifiers(
             TIMissionTemplate mission,
@@ -103,20 +131,44 @@ namespace Assistance
             if (!calculationCache.ContainsKey(key))
             {
                 calculationCache[key] = new MissionModifierSnapshot { CreatedAt = DateTime.UtcNow };
+                // First cache entry - store these modifiers
+                calculationCache[key].DefendingModifiers = new List<TIMissionModifier>(modifiers ?? new List<TIMissionModifier>());
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] Cached {0} defending modifiers for mission '{1}' (attacker: {2}, target: {3})",
+                        modifiers.Count, mission.friendlyName, councilor.displayName, target.displayName));
+                    foreach (var mod in modifiers)
+                    {
+                        Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
+                    }
+                }
             }
+            else if (calculationCache[key].DefendingModifiers != null && 
+                     modifiers.Count < calculationCache[key].DefendingModifiers.Count)
+            {
+                // Only update if new list has fewer modifiers (likely the original before state changes)
+                int oldCount = calculationCache[key].DefendingModifiers.Count;
+                calculationCache[key].DefendingModifiers = new List<TIMissionModifier>(modifiers);
 
-            // Store a copy of the modifiers list as it was during calculation
-            calculationCache[key].DefendingModifiers = new List<TIMissionModifier>(modifiers ?? new List<TIMissionModifier>());
-
-            if (Main.mod != null && Main.settings.debugLogging)
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] Updated defending modifiers for mission '{0}' ({1} -> {2} modifiers)",
+                        mission.friendlyName, 
+                        oldCount,
+                        modifiers.Count));
+                }
+            }
+            else if (Main.mod != null && Main.settings.debugLogging && 
+                     calculationCache[key].DefendingModifiers != null)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[MissionCalculationCache] Cached {0} defending modifiers for mission '{1}' (attacker: {2}, target: {3})",
-                    modifiers.Count, mission.friendlyName, councilor.displayName, target.displayName));
-                foreach (var mod in modifiers)
-                {
-                    Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
-                }
+                    "[MissionCalculationCache] Skipping redundant cache update for mission '{0}' (existing: {1}, new: {2} modifiers)",
+                    mission.friendlyName,
+                    calculationCache[key].DefendingModifiers.Count,
+                    modifiers.Count));
             }
         }
 

@@ -60,6 +60,24 @@ namespace Assistance
                 return;
             }
 
+            // Skip non-player councilor missions unless they're targeting player councilors
+            if (mission.councilor != null && mission.councilor.faction != null && 
+                mission.councilor.faction.player != null && mission.councilor.faction.player.isAI)
+            {
+                // This is an AI councilor - check if target is player-controlled
+                TICouncilorState targetCouncilor = mission.target as TICouncilorState;
+                if (targetCouncilor == null || targetCouncilor.faction == null || 
+                    targetCouncilor.faction.player == null || targetCouncilor.faction.player.isAI)
+                {
+                    // Not targeting a player councilor - skip breakdown
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log("[MissionDetailBreakdown] EARLY EXIT: AI councilor mission not targeting player");
+                    }
+                    return;
+                }
+            }
+
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format("[MissionDetailBreakdown] Processing contested mission: {0}", mission.displayName));
@@ -191,15 +209,20 @@ namespace Assistance
                 List<TIMissionModifier> attackingModifiers = MissionCalculationCache.GetCachedAttackingModifiers(
                     missionTemplate, councilor, target);
 
-                // Fallback to GetNonZeroModifiers if not in cache (shouldn't happen in normal flow)
+                // If not in cache, use empty list instead of recalculating
+                // Recalculating would use current game state, which may have changed since mission calculation
+                // (e.g., target might be detained now but wasn't when mission was calculated)
                 if (attackingModifiers == null)
                 {
                     if (Main.mod != null && Main.settings.debugLogging)
                     {
-                        Main.mod.Logger.Log("[MissionDetailBreakdown] Attacking modifiers not in cache, using fallback");
+                        Main.mod.Logger.Log("[MissionDetailBreakdown] Attacking modifiers not in cache - cache miss detected");
+                        Main.mod.Logger.Log(string.Format("  Cache key would be: {0}:{1}:{2}", 
+                            missionTemplate?.friendlyName ?? "NULL",
+                            councilor?.displayName ?? "NULL", 
+                            target?.displayName ?? "NULL"));
                     }
-                    attackingModifiers = contestedResolution.GetAttackingNonZeroModifiers(
-                        missionTemplate, councilor, target, 0f) ?? new List<TIMissionModifier>();
+                    attackingModifiers = new List<TIMissionModifier>();
                 }
 
                 if (Main.mod != null && Main.settings.debugLogging)
@@ -223,15 +246,20 @@ namespace Assistance
                 List<TIMissionModifier> defendingModifiers = MissionCalculationCache.GetCachedDefendingModifiers(
                     missionTemplate, councilor, target);
 
-                // Fallback to GetNonZeroModifiers if not in cache (shouldn't happen in normal flow)
+                // If not in cache, use empty list instead of recalculating
+                // Recalculating would use current game state, which may have changed since mission calculation
+                // (e.g., target might be detained now but wasn't when mission was calculated)
                 if (defendingModifiers == null)
                 {
                     if (Main.mod != null && Main.settings.debugLogging)
                     {
-                        Main.mod.Logger.Log("[MissionDetailBreakdown] Defending modifiers not in cache, using fallback");
+                        Main.mod.Logger.Log("[MissionDetailBreakdown] Defending modifiers not in cache - cache miss detected");
+                        Main.mod.Logger.Log(string.Format("  Cache key would be: {0}:{1}:{2}", 
+                            missionTemplate?.friendlyName ?? "NULL",
+                            councilor?.displayName ?? "NULL",
+                            target?.displayName ?? "NULL"));
                     }
-                    defendingModifiers = contestedResolution.GetDefendingNonZeroModifiers(
-                        missionTemplate, councilor, target, 0f) ?? new List<TIMissionModifier>();
+                    defendingModifiers = new List<TIMissionModifier>();
                 }
 
                 if (Main.mod != null && Main.settings.debugLogging)
@@ -397,8 +425,23 @@ namespace Assistance
                     }
                 }
 
+                // Get assist bonus for defending side (only if target is a councilor being assisted)
+                float assistBonusDefend = 0;
+                if (targetCouncilor != null)
+                {
+                    // For councilor vs councilor missions, check if the defending councilor has assist bonuses
+                    CouncilorAttribute defenderStat = missionTemplate.primaryDefenderStat();
+                    assistBonusDefend = AssistBonusTracker.GetStatBonus(targetCouncilor, defenderStat);
+
+                    // Show assist bonus for defending side if present
+                    if (assistBonusDefend > 0)
+                    {
+                        breakdown.AppendFormat("    • Assist Bonus: {0:+0.00}\n", assistBonusDefend);
+                    }
+                }
+
                 // Show total defense (modifiers already include the baseline)
-                float totalDefenseValue = defendModifierTotal;
+                float totalDefenseValue = defendModifierTotal + assistBonusDefend;
                 breakdown.AppendFormat("  Total Defense: {0:0.00}\n", totalDefenseValue);
 
                 breakdown.AppendLine();

@@ -90,6 +90,57 @@ namespace Assistance
                 return;
             }
 
+            // Skip non-player councilor missions unless targeting a player councilor or assisted region
+            if (councilor.faction != null && councilor.faction.player != null && councilor.faction.player.isAI)
+            {
+                // This is an AI councilor - check if we should process it
+                bool isRelevant = false;
+
+                // Check if target is a player-controlled councilor
+                TICouncilorState targetCouncilor = target as TICouncilorState;
+                if (targetCouncilor != null && targetCouncilor.faction != null && 
+                    targetCouncilor.faction.player != null && !targetCouncilor.faction.player.isAI)
+                {
+                    isRelevant = true;
+                }
+
+                // Check if target is a control point in a player-assisted region
+                if (!isRelevant && target is TIControlPoint)
+                {
+                    // Skip AI vs control point missions - they're not relevant to player assists
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log("[AssistBonusTracker] SKIP: AI councilor attacking non-player target (control point)");
+                    }
+                    return;
+                }
+
+                // If still not relevant, skip this mission
+                if (!isRelevant)
+                {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log("[AssistBonusTracker] SKIP: AI councilor attacking non-player target");
+                    }
+                    return;
+                }
+            }
+
+            // Cache the attacking modifiers at calculation time (before assist bonus is applied)
+            // This ensures the breakdown shows modifiers as they were during resolution
+            if (mission != null && councilor != null && target != null)
+            {
+                TIMissionResolution_Contested contestedResolution = mission.resolutionMethod as TIMissionResolution_Contested;
+                if (contestedResolution != null)
+                {
+                    var attackingModifiers = contestedResolution.GetAttackingNonZeroModifiers(mission, councilor, target, resourcesSpent);
+                    if (attackingModifiers != null)
+                    {
+                        MissionCalculationCache.CacheAttackingModifiers(mission, councilor, target, attackingModifiers);
+                    }
+                }
+            }
+
             // Get the mission's attacking attribute (e.g., Persuasion, Command)
             CouncilorAttribute missionAttribute = GetMissionAttackerAttribute(mission);
 
@@ -163,6 +214,31 @@ namespace Assistance
                     Main.mod.Logger.Log("[AssistBonusTracker] EARLY EXIT: Defending councilor or mission is NULL");
                 }
                 return;
+            }
+
+            // Skip non-player councilor missions (only player-controlled councilors can be assisted)
+            if (councilor.faction != null && councilor.faction.player != null && councilor.faction.player.isAI)
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log("[AssistBonusTracker] SKIP: Non-player (AI) councilor defending");
+                }
+                return;
+            }
+
+            // Cache the defending modifiers at calculation time (before assist bonus is applied)
+            // This ensures the breakdown shows modifiers as they were during resolution
+            if (mission != null && councilor != null && target != null)
+            {
+                TIMissionResolution_Contested contestedResolution = mission.resolutionMethod as TIMissionResolution_Contested;
+                if (contestedResolution != null)
+                {
+                    var defendingModifiers = contestedResolution.GetDefendingNonZeroModifiers(mission, councilor, target, resourcesSpent);
+                    if (defendingModifiers != null)
+                    {
+                        MissionCalculationCache.CacheDefendingModifiers(mission, councilor, target, defendingModifiers);
+                    }
+                }
             }
 
             // Get the mission's defending attribute (e.g., Persuasion, Command)
