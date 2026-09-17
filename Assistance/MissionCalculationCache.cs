@@ -82,8 +82,23 @@ namespace Assistance
                     }
                 }
             }
-            else if (calculationCache[key].AttackingModifiers != null && 
-                     modifiers.Count < calculationCache[key].AttackingModifiers.Count)
+            else if (calculationCache[key].AttackingModifiers == null)
+            {
+                // Key exists (from defending modifiers) but attacking modifiers haven't been set yet
+                calculationCache[key].AttackingModifiers = new List<TIMissionModifier>(modifiers ?? new List<TIMissionModifier>());
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] Cached {0} attacking modifiers for existing snapshot '{1}'",
+                        modifiers.Count, mission.friendlyName));
+                    foreach (var mod in modifiers)
+                    {
+                        Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
+                    }
+                }
+            }
+            else if (modifiers.Count < calculationCache[key].AttackingModifiers.Count)
             {
                 // Only update if new list has fewer modifiers (likely the original before state changes)
                 int oldCount = calculationCache[key].AttackingModifiers.Count;
@@ -98,8 +113,7 @@ namespace Assistance
                         modifiers.Count));
                 }
             }
-            else if (Main.mod != null && Main.settings.debugLogging && 
-                     calculationCache[key].AttackingModifiers != null)
+            else if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
                     "[MissionCalculationCache] Skipping redundant cache update for mission '{0}' (existing: {1}, new: {2} modifiers)",
@@ -145,8 +159,23 @@ namespace Assistance
                     }
                 }
             }
-            else if (calculationCache[key].DefendingModifiers != null && 
-                     modifiers.Count < calculationCache[key].DefendingModifiers.Count)
+            else if (calculationCache[key].DefendingModifiers == null)
+            {
+                // Key exists (from attacking modifiers) but defending modifiers haven't been set yet
+                calculationCache[key].DefendingModifiers = new List<TIMissionModifier>(modifiers ?? new List<TIMissionModifier>());
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] Cached {0} defending modifiers for existing snapshot '{1}'",
+                        modifiers.Count, mission.friendlyName));
+                    foreach (var mod in modifiers)
+                    {
+                        Main.mod.Logger.Log(string.Format("  - {0}", mod.displayName));
+                    }
+                }
+            }
+            else if (modifiers.Count < calculationCache[key].DefendingModifiers.Count)
             {
                 // Only update if new list has fewer modifiers (likely the original before state changes)
                 int oldCount = calculationCache[key].DefendingModifiers.Count;
@@ -161,8 +190,7 @@ namespace Assistance
                         modifiers.Count));
                 }
             }
-            else if (Main.mod != null && Main.settings.debugLogging && 
-                     calculationCache[key].DefendingModifiers != null)
+            else if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
                     "[MissionCalculationCache] Skipping redundant cache update for mission '{0}' (existing: {1}, new: {2} modifiers)",
