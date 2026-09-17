@@ -326,14 +326,35 @@ namespace Assistance
                 // Calculate defending totals
                 float defendModifierTotal = 0f;
 
-                // Handle both councilor and control point targets
+                // Determine defending councilor (same approach as attacking councilor)
+                TICouncilorState defendingCouncilor = targetCouncilor;
+
+                // If target is not a councilor, try to get a defending councilor from the defending faction
+                if (defendingCouncilor == null && defendingFaction != null)
+                {
+                    var activeCouncilors = defendingFaction.GetType().GetProperty("activeCouncilors", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    if (activeCouncilors != null)
+                    {
+                        var councilors = activeCouncilors.GetValue(defendingFaction) as System.Collections.IList;
+                        if (councilors != null && councilors.Count > 0)
+                        {
+                            defendingCouncilor = councilors[0] as TICouncilorState;
+                        }
+                    }
+                }
+
+                // Display defender name
                 if (targetCouncilor != null)
                 {
                     breakdown.AppendFormat("  Defender: {0}\n", targetCouncilor.displayName);
                 }
+                else if (defendingCouncilor != null)
+                {
+                    breakdown.AppendFormat("  Defender: {0} (faction leader)\n", defendingCouncilor.displayName);
+                }
                 else
                 {
-                    // Non-councilor target (control point, faction, etc.)
+                    // Non-councilor target with no defending faction/councilor
                     breakdown.AppendFormat("  Defender: {0}\n", target.displayName);
                 }
 
@@ -344,83 +365,20 @@ namespace Assistance
                     {
                         try
                         {
-                            // Try with the target councilor first (for councilor vs councilor missions)
-                            float modValue = modifier.GetModifier(targetCouncilor, mission.target, 0f, missionTemplate.primaryResource);
+                            // Use the defending councilor (same approach as attacking modifiers with attacking councilor)
+                            float modValue = modifier.GetModifier(defendingCouncilor, mission.target, 0f, missionTemplate.primaryResource);
                             breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
                             defendModifierTotal += modValue;
                         }
                         catch (Exception modEx)
                         {
-                            // For control points, some modifiers may need the defending faction instead
-                            if (targetCouncilor == null && mission.target is TIControlPoint && defendingFaction != null)
+                            if (Main.mod != null && Main.settings.debugLogging)
                             {
-                                try
-                                {
-                                    // Get the leader of the defending faction to use for the modifier
-                                    TICouncilorState defendingLeader = null;
-                                    // Try to get the faction leader or councilors
-                                    var activeCouncilors = defendingFaction.GetType().GetProperty("activeCouncilors", System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                                    if (activeCouncilors != null)
-                                    {
-                                        var councilors = activeCouncilors.GetValue(defendingFaction) as System.Collections.IList;
-                                        if (councilors != null && councilors.Count > 0)
-                                        {
-                                            defendingLeader = councilors[0] as TICouncilorState;
-                                        }
-                                        else if (Main.mod != null && Main.settings.debugLogging)
-                                        {
-                                            Main.mod.Logger.Log(string.Format(
-                                                "[MissionDetailBreakdown] activeCouncilors property found but empty or null (count: {0})",
-                                                councilors?.Count ?? -1));
-                                        }
-                                    }
-                                    else if (Main.mod != null && Main.settings.debugLogging)
-                                    {
-                                        Main.mod.Logger.Log("[MissionDetailBreakdown] activeCouncilors property not found on defending faction");
-                                    }
-
-                                    if (defendingLeader != null)
-                                    {
-                                        // Try calling the modifier with the defending faction's leader
-                                        float modValue = modifier.GetModifier(defendingLeader, mission.target, 0f, missionTemplate.primaryResource);
-                                        breakdown.AppendFormat("    • {0}: {1:+0.00;-0.00}\n", modifier.displayName, modValue);
-                                        defendModifierTotal += modValue;
-                                    }
-                                    else
-                                    {
-                                        if (Main.mod != null && Main.settings.debugLogging)
-                                        {
-                                            Main.mod.Logger.Log(string.Format(
-                                                "[MissionDetailBreakdown] No defending leader found for modifier '{0}'",
-                                                modifier.displayName));
-                                        }
-                                        throw modEx; // No defending leader found
-                                    }
-                                }
-                                catch (Exception innerEx)
-                                {
-                                    if (Main.mod != null && Main.settings.debugLogging)
-                                    {
-                                        Main.mod.Logger.Log(string.Format(
-                                            "[MissionDetailBreakdown] Skipping defending modifier '{0}' (fallback failed): {1}",
-                                            modifier.displayName, innerEx.Message));
-                                    }
-                                    // Skip this modifier - can't get defending councilor or modifier doesn't support it
-                                }
+                                Main.mod.Logger.Log(string.Format(
+                                    "[MissionDetailBreakdown] Skipping defending modifier '{0}' (incompatible with target type): {1}",
+                                    modifier.displayName, modEx.Message));
                             }
-                            else
-                            {
-                                if (Main.mod != null && Main.settings.debugLogging)
-                                {
-                                    Main.mod.Logger.Log(string.Format(
-                                        "[MissionDetailBreakdown] Skipping defending modifier '{0}' (no fallback): targetCouncilor={1}, isControlPoint={2}, defendingFaction={3}",
-                                        modifier.displayName, 
-                                        targetCouncilor != null,
-                                        mission.target is TIControlPoint,
-                                        defendingFaction != null));
-                                }
-                                // Skip this modifier silently - some modifiers don't support non-councilor targets
-                            }
+                            // Skip this modifier silently - some modifiers don't support non-councilor targets
                         }
                     }
                 }
