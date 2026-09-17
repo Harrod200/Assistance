@@ -56,10 +56,30 @@ namespace Assistance
         {
             if (mission != null && councilor != null && target != null && __result != null)
             {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[ModifierCachePatch] GetAttackingNonZeroModifiers_Postfix: mission={0}, attacker={1}, target={2}, modCount={3}",
+                        mission.friendlyName, councilor.displayName, target.displayName, __result.Count));
+                }
+
                 // Only cache relevant missions
                 if (IsRelevantMission(councilor, target))
                 {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log(string.Format(
+                            "[ModifierCachePatch] CACHING attacking modifiers: {0}", mission.friendlyName));
+                    }
                     MissionCalculationCache.CacheAttackingModifiers(mission, councilor, target, __result);
+                }
+                else
+                {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log(string.Format(
+                            "[ModifierCachePatch] SKIPPING attacking modifiers (not relevant): {0}", mission.friendlyName));
+                    }
                 }
             }
         }
@@ -79,10 +99,30 @@ namespace Assistance
         {
             if (mission != null && councilor != null && target != null && __result != null)
             {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[ModifierCachePatch] GetDefendingNonZeroModifiers_Postfix: mission={0}, defender={1}, target={2}, modCount={3}",
+                        mission.friendlyName, councilor.displayName, target.displayName, __result.Count));
+                }
+
                 // Cache defending modifiers for relevant missions (same as attacking modifiers)
                 if (IsRelevantMission(councilor, target))
                 {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log(string.Format(
+                            "[ModifierCachePatch] CACHING defending modifiers: {0}", mission.friendlyName));
+                    }
                     MissionCalculationCache.CacheDefendingModifiers(mission, councilor, target, __result);
+                }
+                else
+                {
+                    if (Main.mod != null && Main.settings.debugLogging)
+                    {
+                        Main.mod.Logger.Log(string.Format(
+                            "[ModifierCachePatch] SKIPPING defending modifiers (not relevant): {0}", mission.friendlyName));
+                    }
                 }
             }
         }
