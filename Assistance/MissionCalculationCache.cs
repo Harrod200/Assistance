@@ -197,10 +197,33 @@ namespace Assistance
             TIGameState target)
         {
             string key = GetCacheKey(mission, councilor, target);
-            if (string.IsNullOrEmpty(key) || !calculationCache.ContainsKey(key))
+            if (string.IsNullOrEmpty(key))
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] GetCachedDefendingModifiers: NULL or empty key"));
+                }
                 return null;
+            }
+
+            if (!calculationCache.ContainsKey(key))
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[MissionCalculationCache] GetCachedDefendingModifiers: Cache miss for key '{0}'", key));
+                }
+                return null;
+            }
 
             var snapshot = calculationCache[key];
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format(
+                    "[MissionCalculationCache] GetCachedDefendingModifiers: Found snapshot, DefendingModifiers={0}",
+                    snapshot?.DefendingModifiers?.Count ?? -1));
+            }
             return snapshot?.DefendingModifiers;
         }
 
