@@ -91,6 +91,7 @@
     <Compile Include="TIMissionPhaseState_StartofTurnBookkeepingPatch.cs" />
     <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
     <Compile Include="TIMissionResolution_Contested_ModifierCachePatch.cs" />
+    <Compile Include="TIMissionResolution_UIBreakdown_InjectionPatch.cs" />
     <Compile Include="TIMissionTemplate_Assist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />

@@ -1,0 +1,61 @@
+--- a/Assistance/TIMissionResolution_Contested_ModifierCachePatch.cs
++++ b/Assistance/TIMissionResolution_Contested_ModifierCachePatch.cs
+@@ -1,44 +1,43 @@
+         /// <summary>
+-        /// Helper method: Determines if a councilor is player-controlled.
++        /// Postfix Patch for caching defending modifiers layout snapshots.
++        /// Resolves cache lookup key inversion bugs on offensive contested rolls.
+         /// </summary>
+-        private static bool IsPlayerControlled(TICouncilorState councilor)
+-        {
+-            return councilor != null && 
+-                   councilor.faction != null && 
+-                   councilor.faction.player != null && 
+-                   !councilor.faction.player.isAI;
+-        }
+-
+         [HarmonyPostfix]
+         public static void Postfix(
+             TIMissionTemplate mission,
+-            TICouncilorState defender,
++            TICouncilorState councilor,
+             TIGameState target,
+             float resourcesSpent,
+             List<TIMissionModifier> __result)
+         {
+-            if (mission == null || defender == null || target == null || __result == null)
++            // Structural Guard Clause: Reject corrupted execution frames instantly
++            if (mission == null || councilor == null || target == null || __result == null)
+             {
+                 return;
+             }
+ 
+             // Resolve the objective defender target node to compute faction relevance
+-            TICouncilorState trueDefender = defender;
++            TICouncilorState trueDefender = councilor;
+             if (target is TICouncilorState targetedCouncilor)
+             {
+                 trueDefender = targetedCouncilor;
+             }
+ 
+             // CRITICAL GUARD CLAUSE: Silently skip AI-exclusive paths to suppress background thread noise.
+-            if (!IsPlayerControlled(defender) && !IsPlayerControlled(trueDefender))
++            // Optimization: Reuses centralized helper block from the core tracker.
++            if (!AssistBonusTracker.IsPlayerControlled(councilor) && !AssistBonusTracker.IsPlayerControlled(trueDefender))
+             {
+                 return;
+             }
+ 
+             if (Main.mod != null && Main.settings.debugLogging)
+             {
+-                Main.mod.Logger.Log(string.Format("[AssistMission] Caching defense snapshot data for mission: {0}", mission.friendlyName));
++                // Optimization: String interpolation avoids heavy heap allocations from legacy formatting loops
++                Main.mod.Logger.Log($"[AssistMission] Caching UI screen layout breakdown for: {mission.friendlyName}");
+             }
+ 
+-            MissionCalculationCache.CacheDefendingModifiers(mission, trueDefender, target, __result);
++            // FIX: Always preserve 'councilor' (the primary actor) as the key anchor!
++            // This forces the cache string schema to align precisely with the UI panel lookup parameters,
++            // restoring legitimate difficulty value strings in the mission overview pane.
++            MissionCalculationCache.CacheDefendingModifiers(mission, councilor, target, __result);
+         }
