@@ -1,7 +1,7 @@
 {
   "title": "Councilor Assist Mission",
   "author": "Chris",
-  "description": "Adds an Assist Mission that allows one councilor to share a percentage (0-100%, configurable) of their stats with another councilor. Bonuses are temporary and disappear when the assisted councilor completes their next mission.",
+  "description": "Adds an Assist Mission allowing one councilor to temporarily boost another's stats (100% by default, configurable 0-100%). Bonuses are capped at a configurable limit (default 25) and expire when the assisted councilor completes their next mission.",
   "LoadOrder": 1200,
   "TemplatesToConcatArrays": [],
   "TemplatesToReplaceArrays": [],
