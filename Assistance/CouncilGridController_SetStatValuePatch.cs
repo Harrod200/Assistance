@@ -1,6 +1,7 @@
 using System;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
+using UnityEngine;
 
 namespace Assistance
 {
@@ -82,6 +83,13 @@ namespace Assistance
                                 {
                                     // Calculate combined total
                                     int totalStat = baseStat + bonus;
+
+                                    // Apply stat cap if enabled
+                                    if (Main.settings != null && Main.settings.statCapEnabled)
+                                    {
+                                        // Ensure natural stat is never reduced
+                                        totalStat = Mathf.Max(baseStat, Mathf.Min(totalStat, Main.settings.statCapLimit));
+                                    }
 
                                     // Format: show only combined total (in orange)
                                     string newText = FormatOrange(totalStat.ToString());

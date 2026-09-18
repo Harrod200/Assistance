@@ -55,6 +55,16 @@ namespace Assistance
 
             GUILayout.Space(8f);
             Main.settings.debugLogging = GUILayout.Toggle(Main.settings.debugLogging, "Enable Debug Logging", new GUILayoutOption[0]);
+
+            GUILayout.Space(12f);
+            Main.settings.statCapEnabled = GUILayout.Toggle(Main.settings.statCapEnabled, "Enable Stat Cap (Base Stats + Assist Bonus)", new GUILayoutOption[0]);
+
+            if (Main.settings.statCapEnabled)
+            {
+                GUILayout.Space(4f);
+                Main.settings.statCapLimit = Main.DrawNamedInt("Stat Cap Limit", Main.settings.statCapLimit, 200f);
+                Main.settings.statCapLimit = Mathf.Max(0, Main.settings.statCapLimit);
+            }
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
@@ -76,6 +86,26 @@ namespace Assistance
             string text = GUILayout.TextField(value.ToString("F1"), new GUILayoutOption[] { GUILayout.Width(width) });
             float num;
             if (float.TryParse(text, out num))
+            {
+                return num;
+            }
+            return value;
+        }
+
+        private static int DrawNamedInt(string label, int value, float labelWidth)
+        {
+            GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+            GUILayout.Label(label, new GUILayoutOption[] { GUILayout.Width(labelWidth) });
+            int num = Main.DrawInt(value, 90f);
+            GUILayout.EndHorizontal();
+            return num;
+        }
+
+        private static int DrawInt(int value, float width)
+        {
+            string text = GUILayout.TextField(value.ToString(), new GUILayoutOption[] { GUILayout.Width(width) });
+            int num;
+            if (int.TryParse(text, out num))
             {
                 return num;
             }

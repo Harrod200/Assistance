@@ -1,6 +1,7 @@
 using System;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
+using UnityEngine;
 
 namespace Assistance
 {
@@ -167,14 +168,38 @@ namespace Assistance
                 return;
             }
 
-            // Apply only this stat's bonus to attacking modifiers
+            // Apply stat cap if enabled
+            int cappedBonus = statBonus;
+            if (Main.settings.statCapEnabled)
+            {
+                // Get the base stat value
+                int baseStatValue = councilor.GetAttribute(missionAttribute, true, true, true, false, false, false);
+
+                // Calculate total with the full bonus
+                int totalWithBonus = baseStatValue + statBonus;
+
+                // Apply cap: max(base, min(total, cap))
+                int cappedTotal = Mathf.Max(baseStatValue, Mathf.Min(totalWithBonus, Main.settings.statCapLimit));
+
+                // The capped bonus is the difference between capped total and base
+                cappedBonus = cappedTotal - baseStatValue;
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[AssistBonusTracker] Stat cap applied: base={0}, bonus={1}, capped_bonus={2}, total={3}", 
+                        baseStatValue, statBonus, cappedBonus, cappedTotal));
+                }
+            }
+
+            // Apply only this stat's (possibly capped) bonus to attacking modifiers
             float originalResult = __result;
-            __result += statBonus;
+            __result += cappedBonus;
 
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to attacking modifier", missionAttribute, statBonus));
+                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to attacking modifier", missionAttribute, cappedBonus));
                 Main.mod.Logger.Log(string.Format("  Result changed: {0} ? {1}", originalResult, __result));
             }
         }
@@ -267,14 +292,38 @@ namespace Assistance
                 return;
             }
 
-            // Apply only this stat's bonus to defending modifiers
+            // Apply stat cap if enabled
+            int cappedBonus = statBonus;
+            if (Main.settings.statCapEnabled)
+            {
+                // Get the base stat value for the defending councilor
+                int baseStatValue = councilor.GetAttribute(missionAttribute, true, true, true, false, false, false);
+
+                // Calculate total with the full bonus
+                int totalWithBonus = baseStatValue + statBonus;
+
+                // Apply cap: max(base, min(total, cap))
+                int cappedTotal = Mathf.Max(baseStatValue, Mathf.Min(totalWithBonus, Main.settings.statCapLimit));
+
+                // The capped bonus is the difference between capped total and base
+                cappedBonus = cappedTotal - baseStatValue;
+
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log(string.Format(
+                        "[AssistBonusTracker] Stat cap applied: base={0}, bonus={1}, capped_bonus={2}, total={3}", 
+                        baseStatValue, statBonus, cappedBonus, cappedTotal));
+                }
+            }
+
+            // Apply only this stat's (possibly capped) bonus to defending modifiers
             float originalResult = __result;
-            __result += statBonus;
+            __result += cappedBonus;
 
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to defending modifier", missionAttribute, statBonus));
+                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to defending modifier", missionAttribute, cappedBonus));
                 Main.mod.Logger.Log(string.Format("  Result changed: {0} ? {1}", originalResult, __result));
             }
         }
