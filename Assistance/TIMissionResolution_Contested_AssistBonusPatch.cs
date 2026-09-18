@@ -73,6 +73,7 @@ namespace Assistance
         /// <summary>
         /// Applies assist bonus to attacking modifiers when the assisted councilor attacks.
         /// Only the bonus for the mission's specific stat attribute is applied.
+        /// GUARD CLAUSE: Silently ignores AI attacker calculations to prevent thread-unsafe string allocation.
         /// </summary>
         [HarmonyPatch(typeof(TIMissionResolution_Contested), nameof(TIMissionResolution_Contested.SumAttackingModifiers))]
         [HarmonyPostfix]
@@ -83,60 +84,16 @@ namespace Assistance
             float resourcesSpent,
             ref float __result)
         {
-            // Log entry to contested mission check
-            if (Main.mod != null && Main.settings.debugLogging)
+            // Structural Guard Clause: Reject corrupted frames instantly
+            if (mission == null || councilor == null)
             {
-                Main.mod.Logger.Log("[AssistBonusTracker] SumAttackingModifiers ENTRY");
-                Main.mod.Logger.Log(string.Format("  Mission: {0}", mission != null ? mission.friendlyName : "NULL"));
-                Main.mod.Logger.Log(string.Format("  Attacker: {0}", councilor != null ? councilor.displayName : "NULL"));
-                Main.mod.Logger.Log(string.Format("  Target type: {0}", target != null ? target.GetType().Name : "NULL"));
-                Main.mod.Logger.Log(string.Format("  Target: {0}", target != null ? target.displayName : "NULL"));
-                Main.mod.Logger.Log(string.Format("  Result before: {0}", __result));
-            }
-
-            if (councilor == null || mission == null)
-            {
-                if (Main.mod != null && Main.settings.debugLogging)
-                {
-                    Main.mod.Logger.Log("[AssistBonusTracker] EARLY EXIT: Attacking councilor or mission is NULL");
-                }
                 return;
             }
 
-            // Skip non-player councilor missions unless targeting a player councilor or assisted region
-            if (councilor.faction != null && councilor.faction.player != null && councilor.faction.player.isAI)
+            // CRITICAL GUARD CLAUSE: Drop out silently if the attacker isn't human-controlled
+            if (!IsPlayerControlled(councilor))
             {
-                // This is an AI councilor - check if we should process it
-                bool isRelevant = false;
-
-                // Check if target is a player-controlled councilor
-                TICouncilorState targetCouncilor = target as TICouncilorState;
-                if (targetCouncilor != null && targetCouncilor.faction != null && 
-                    targetCouncilor.faction.player != null && !targetCouncilor.faction.player.isAI)
-                {
-                    isRelevant = true;
-                }
-
-                // Check if target is a control point in a player-assisted region
-                if (!isRelevant && target is TIControlPoint)
-                {
-                    // Skip AI vs control point missions - they're not relevant to player assists
-                    if (Main.mod != null && Main.settings.debugLogging)
-                    {
-                        Main.mod.Logger.Log("[AssistBonusTracker] SKIP: AI councilor attacking non-player target (control point)");
-                    }
-                    return;
-                }
-
-                // If still not relevant, skip this mission
-                if (!isRelevant)
-                {
-                    if (Main.mod != null && Main.settings.debugLogging)
-                    {
-                        Main.mod.Logger.Log("[AssistBonusTracker] SKIP: AI councilor attacking non-player target");
-                    }
-                    return;
-                }
+                return; // Silent exit - zero log allocation for AI background turn phases
             }
 
             // Cache the attacking modifiers at calculation time (before assist bonus is applied)
@@ -152,6 +109,12 @@ namespace Assistance
                         MissionCalculationCache.CacheAttackingModifiers(mission, councilor, target, attackingModifiers);
                     }
                 }
+            }
+
+            // Safe Player Execution: This code block will now ONLY execute if a player-controlled attacker is active.
+            if (Main.mod != null && Main.settings.debugLogging)
+            {
+                Main.mod.Logger.Log(string.Format("[AssistMission] Processing player attacker: {0}", councilor.displayName));
             }
 
             // Get the mission's attacking attribute (e.g., Persuasion, Command)
@@ -211,8 +174,8 @@ namespace Assistance
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format(
-                    "[AssistBonusTracker] ? APPLIED {0} assist bonus ({1} points) to attacking modifier", missionAttribute, cappedBonus));
-                Main.mod.Logger.Log(string.Format("  Result changed: {0} ? {1}", originalResult, __result));
+                    "[AssistBonusTracker] ✓ APPLIED {0} assist bonus ({1} points) to attacking modifier", missionAttribute, cappedBonus));
+                Main.mod.Logger.Log(string.Format("  Result changed: {0} → {1}", originalResult, __result));
             }
         }
 
