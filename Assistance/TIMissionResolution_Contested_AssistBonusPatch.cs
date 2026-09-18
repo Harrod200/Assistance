@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
 using UnityEngine;
@@ -286,6 +287,47 @@ namespace Assistance
                     "[AssistBonusTracker] ✓ APPLIED {0} assist bonus ({1} points) to defending modifier", missionAttribute, cappedBonus));
                 Main.mod.Logger.Log(string.Format("  Result changed: {0} → {1}", originalResult, __result));
             }
+        }
+
+        /// <summary>
+        /// Postfix patch for GetDefendingNonZeroModifiers to cache defending modifiers at calculation time.
+        /// This ensures the breakdown display shows modifiers as they were during resolution,
+        /// not as they appear after rewards have been added.
+        /// 
+        /// CRITICAL: We pass the primary mission actor (councilor) as the cache key to match
+        /// what the UI breakdown screen looks up, ensuring cache hits are consistent.
+        /// </summary>
+        [HarmonyPatch(typeof(TIMissionResolution_Contested), nameof(TIMissionResolution_Contested.GetDefendingNonZeroModifiers))]
+        [HarmonyPostfix]
+        public static void GetDefendingNonZeroModifiers_Postfix(
+            TIMissionTemplate mission,
+            TICouncilorState councilor, // The primary mission actor (Catherine)
+            TIGameState target,
+            float resourcesSpent,
+            List<TIMissionModifier> __result)
+        {
+            if (mission == null || councilor == null || target == null || __result == null)
+            {
+                return;
+            }
+
+            // 1. For structural logic, resolve the true defender to check if player-relevant
+            TICouncilorState trueDefender = councilor;
+            if (target is TICouncilorState targetedCouncilor)
+            {
+                trueDefender = targetedCouncilor; 
+            }
+
+            // 2. Ensure we only cache player-relevant actions to suppress AI bloat
+            if (!AssistBonusTracker.IsPlayerControlled(councilor) && !AssistBonusTracker.IsPlayerControlled(trueDefender))
+            {
+                return; 
+            }
+
+            // 3. FIX: Always pass 'councilor' (the attacker) as the second argument here!
+            // This forces the cache key string to generate as "Assassinate:Catherine:Alfa-18",
+            // perfectly matching what the UI breakdown screen looks up later.
+            MissionCalculationCache.CacheDefendingModifiers(mission, councilor, target, __result);
         }
     }
 }
