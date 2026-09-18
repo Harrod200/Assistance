@@ -6,8 +6,8 @@ namespace Assistance
 {
     /// <summary>
     /// UI injection patch for the contested mission detail breakdown screen.
-    /// Uses reflection-based patching since UIContestedMissionDetailBreakdown is not available at compile-time.
-    /// This patch is currently disabled pending access to the actual UI assembly.
+    /// Patches UIMissionDetailBreakdownContested.RefreshWindow to inject additional modifier rows
+    /// showing organization contributions and squad assistance bonuses.
     /// </summary>
     [HarmonyPatch]
     public static class UIMissionDetailBreakdown_RowInjectionPatch
@@ -21,13 +21,13 @@ namespace Assistance
         {
             try
             {
-                // Try to find the UIContestedMissionDetailBreakdown type in the game assembly
-                var targetType = Type.GetType("PavonisInteractive.TerraInvicta.UIContestedMissionDetailBreakdown, Assembly-CSharp");
+                // Try to find the UIMissionDetailBreakdownContested type in the game assembly
+                var targetType = Type.GetType("PavonisInteractive.TerraInvicta.UIMissionDetailBreakdownContested, Assembly-CSharp");
                 if (targetType == null)
                 {
                     if (Main.mod != null && Main.settings.debugLogging)
                     {
-                        Main.mod.Logger.Log("[UIMissionDetailBreakdown] Warning: UIContestedMissionDetailBreakdown type not found. UI injection patch disabled.");
+                        Main.mod.Logger.Log("[UIMissionDetailBreakdown] Warning: UIMissionDetailBreakdownContested type not found. UI injection patch disabled.");
                     }
                     return null;
                 }
@@ -57,10 +57,10 @@ namespace Assistance
 
         /// <summary>
         /// Postfix patch targeting the active UI screen drawing system.
-        /// Reclaims missing modifier splits (Orgs, Item Tiers, Trait Buffs) and blends them into the layout rows.
+        /// Injects modifier rows for organization contributions and squad assistance bonuses.
         /// </summary>
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(object __instance, TIMissionTemplate mission, TICouncilorState councilor, TIGameState target)
         {
             try
             {
@@ -69,18 +69,6 @@ namespace Assistance
                     return;
                 }
 
-                // Use reflection to safely call methods on the UI instance
-                var missionProp = __instance.GetType().GetProperty("mission", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.IgnoreCase);
-                var councilorProp = __instance.GetType().GetProperty("councilor", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.IgnoreCase);
-
-                if (missionProp == null || councilorProp == null)
-                {
-                    return;
-                }
-
-                var mission = missionProp.GetValue(__instance) as TIMissionTemplate;
-                var councilor = councilorProp.GetValue(__instance) as TICouncilorState;
-
                 // 1. Guard Clause: Skip visual operations instantly if this context frame is non-player
                 if (councilor == null || !AssistBonusTracker.IsPlayerControlled(councilor))
                 {
@@ -88,8 +76,6 @@ namespace Assistance
                 }
 
                 // --- RECOVERING HIDDEN VECTOR 1: ORG INJECTIONS & UN-TRACKED BASES ---
-                // Note: We would need access to mission.attackingAttribute to implement this
-                // For now, we'll use the primary attacker stat as a proxy
                 if (mission != null)
                 {
                     CouncilorAttribute activeAttribute = mission.primaryAttackerStat;
@@ -105,19 +91,19 @@ namespace Assistance
 
                         if (hiddenOrgContribution > 0)
                         {
-                            // Append the missing Organization layer straight into the visible user overlay menu rows
-                            var addRowMethod = __instance.GetType().GetMethod("AddBreakdownRow", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                            if (addRowMethod != null)
+                            // Inject the missing Organization layer into the modifier rows
+                            var addModifierRowMethod = __instance.GetType().GetMethod("AddModifierRow", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                            if (addModifierRowMethod != null)
                             {
                                 try
                                 {
-                                    addRowMethod.Invoke(__instance, new object[] { $"Attached Orgs & Assets ({activeAttribute})", (float)hiddenOrgContribution });
+                                    addModifierRowMethod.Invoke(__instance, new object[] { $"Attached Orgs & Assets ({activeAttribute})", (float)hiddenOrgContribution, false });
                                 }
                                 catch (Exception ex)
                                 {
                                     if (Main.mod != null && Main.settings.debugLogging)
                                     {
-                                        Main.mod.Logger.Log(string.Format("[UIMissionDetailBreakdown] Error adding org row: {0}", ex.Message));
+                                        Main.mod.Logger.Log(string.Format("[UIMissionDetailBreakdown] Error adding org modifier row: {0}", ex.Message));
                                     }
                                 }
                             }
@@ -132,19 +118,19 @@ namespace Assistance
                     int activeAssistanceBonus = AssistBonusTracker.GetStatBonus(councilor, activeAttribute);
                     if (activeAssistanceBonus > 0)
                     {
-                        // Explicitly routes and appends the missing squad assistance totals right into the layout pane
-                        var addRowMethod = __instance.GetType().GetMethod("AddBreakdownRow", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
-                        if (addRowMethod != null)
+                        // Inject the squad assistance totals into the modifier rows
+                        var addModifierRowMethod = __instance.GetType().GetMethod("AddModifierRow", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                        if (addModifierRowMethod != null)
                         {
                             try
                             {
-                                addRowMethod.Invoke(__instance, new object[] { "Adjacent Councilors Assistance Pool", (float)activeAssistanceBonus });
+                                addModifierRowMethod.Invoke(__instance, new object[] { "Adjacent Squad Assistance Pool", (float)activeAssistanceBonus, false });
                             }
                             catch (Exception ex)
                             {
                                 if (Main.mod != null && Main.settings.debugLogging)
                                 {
-                                    Main.mod.Logger.Log(string.Format("[UIMissionDetailBreakdown] Error adding assist row: {0}", ex.Message));
+                                    Main.mod.Logger.Log(string.Format("[UIMissionDetailBreakdown] Error adding assist modifier row: {0}", ex.Message));
                                 }
                             }
                         }
