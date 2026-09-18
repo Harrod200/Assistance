@@ -22,7 +22,7 @@ namespace Assistance
         /// Helper method: Determines if a councilor is player-controlled.
         /// Returns false for null, AI factions, or non-player controllers.
         /// </summary>
-        private static bool IsPlayerControlled(TICouncilorState councilor)
+        public static bool IsPlayerControlled(TICouncilorState councilor)
         {
             return councilor != null && 
                    councilor.faction != null && 
@@ -87,26 +87,18 @@ namespace Assistance
                 return 0; // Silent exit
             }
 
-            if (!trackedBonuses.ContainsKey(councilor))
+            // Optimization: Single-pass retrieval prevents double-lookup overhead
+            if (trackedBonuses.TryGetValue(councilor, out var statDict) && 
+                statDict.TryGetValue(stat, out int bonus))
             {
-                return 0;
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log($"[AssistBonusTracker] GetStatBonus: '{councilor.displayName}' {stat} = {bonus}");
+                }
+                return bonus;
             }
 
-            if (!trackedBonuses[councilor].ContainsKey(stat))
-            {
-                return 0;
-            }
-
-            int bonus = trackedBonuses[councilor][stat];
-
-            // Safe Isolated Execution: Only runs for player-controlled councilors
-            if (Main.mod != null && Main.settings.debugLogging)
-            {
-                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetStatBonus: '{0}' {1} = {2}", 
-                    councilor.displayName, stat, bonus));
-            }
-
-            return bonus;
+            return 0;
         }
 
         /// <summary>
@@ -122,20 +114,16 @@ namespace Assistance
                 return 0; // Silent exit
             }
 
-            if (!totalBonusAmounts.ContainsKey(councilor))
+            // Optimization: Use TryGetValue to completely prevent dictionary traversal duplication
+            if (totalBonusAmounts.TryGetValue(councilor, out int bonus))
             {
-                return 0;
+                if (Main.mod != null && Main.settings.debugLogging)
+                {
+                    Main.mod.Logger.Log($"[AssistBonusTracker] GetTotalBonus for '{councilor.displayName}': {bonus} points");
+                }
+                return bonus;
             }
-
-            int bonus = totalBonusAmounts[councilor];
-
-            // Safe Isolated Execution: Only runs for player-controlled councilors
-            if (Main.mod != null && Main.settings.debugLogging)
-            {
-                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetTotalBonus for '{0}': {1} points", councilor.displayName, bonus));
-            }
-
-            return bonus;
+            return 0;
         }
 
         /// <summary>
