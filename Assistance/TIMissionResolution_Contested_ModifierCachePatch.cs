@@ -18,18 +18,6 @@ namespace Assistance
     public class TIMissionResolution_Contested_ModifierCachePatch
     {
         /// <summary>
-        /// Helper method: Determines if a councilor is player-controlled.
-        /// Returns false for null, AI factions, or non-player controllers.
-        /// </summary>
-        private static bool IsPlayerControlled(TICouncilorState councilor)
-        {
-            return councilor != null && 
-                   councilor.faction != null && 
-                   councilor.faction.player != null && 
-                   !councilor.faction.player.isAI;
-        }
-
-        /// <summary>
         /// Determines if a mission is relevant to the player (player councilor attacking, or targeting a player councilor).
         /// We cache all player councilor attacks and all attacks targeting player councilors, as these reflect
         /// the player's involvement and must capture modifiers at calculation time to avoid post-mission pollution.
@@ -39,7 +27,7 @@ namespace Assistance
         private static bool IsRelevantMission(TICouncilorState attacker, TIGameState target)
         {
             // Structural Guard Clause: Terminate AI execution paths instantly
-            if (attacker == null || !IsPlayerControlled(attacker))
+            if (attacker == null || !AssistBonusTracker.IsPlayerControlled(attacker))
             {
                 return false; // Silent exit - no logging, no allocations
             }
@@ -77,19 +65,15 @@ namespace Assistance
             // Safe Isolated Execution: Only runs for player-controlled councilors
             if (Main.mod != null && Main.settings.debugLogging)
             {
-                Main.mod.Logger.Log(string.Format(
-                    "[ModifierCachePatch] GetAttackingNonZeroModifiers_Postfix: mission={0}, attacker={1}, target={2}, modCount={3}",
-                    mission.friendlyName, councilor.displayName, target.displayName, __result.Count));
+                Main.mod.Logger.Log($"[ModifierCachePatch] GetAttackingNonZeroModifiers_Postfix: mission={mission.friendlyName}, attacker={councilor.displayName}, target={target.displayName}, modCount={__result.Count}");
             }
 
             MissionCalculationCache.CacheAttackingModifiers(mission, councilor, target, __result);
         }
 
         /// <summary>
-        /// Caches defending modifiers after they're retrieved by GetDefendingNonZeroModifiers.
-        /// Only caches relevant missions (player-controlled defender or player target).
-        /// 
-        /// GUARD CLAUSE: AI faction actions exit immediately without log buffer allocation.
+        /// Postfix Patch for caching defending modifiers layout snapshots.
+        /// Resolves cache lookup key inversion bugs on offensive contested rolls.
         /// </summary>
         [HarmonyPatch(typeof(TIMissionResolution_Contested), nameof(TIMissionResolution_Contested.GetDefendingNonZeroModifiers))]
         [HarmonyPostfix]
@@ -100,36 +84,37 @@ namespace Assistance
             float resourcesSpent,
             List<TIMissionModifier> __result)
         {
-            // Structural Guard Clause: Stop AI execution paths before any allocation
+            // Structural Guard Clause: Reject corrupted execution frames instantly
             if (mission == null || councilor == null || target == null || __result == null)
             {
                 return;
             }
 
-            // For defending modifiers, the 'councilor' parameter is the defender.
-            // Check if the defender is player-controlled OR if the target is a player-controlled councilor
-            bool isPlayerDefender = IsPlayerControlled(councilor);
-            bool isPlayerTarget = false;
-
-            if (target is TICouncilorState targetCouncilor)
+            // Resolve the objective defender target node to compute faction relevance
+            TICouncilorState trueDefender = councilor;
+            if (target is TICouncilorState targetedCouncilor)
             {
-                isPlayerTarget = IsPlayerControlled(targetCouncilor);
+                trueDefender = targetedCouncilor;
             }
 
-            if (!isPlayerDefender && !isPlayerTarget)
+            // CRITICAL GUARD CLAUSE: Silently skip AI-exclusive paths to suppress background thread noise.
+            // Optimization: Reuses centralized helper block from the core tracker.
+            if (!AssistBonusTracker.IsPlayerControlled(councilor) && !AssistBonusTracker.IsPlayerControlled(trueDefender))
             {
-                return; // Silent exit - zero log buffer allocation for non-player scenarios
+                return;
             }
 
-            // Safe Isolated Execution: Only runs for player-relevant objectives
             if (Main.mod != null && Main.settings.debugLogging)
             {
-                Main.mod.Logger.Log(string.Format(
-                    "[ModifierCachePatch] GetDefendingNonZeroModifiers_Postfix: mission={0}, defender={1}, target={2}, modCount={3}",
-                    mission.friendlyName, councilor.displayName, target.displayName, __result.Count));
+                // Optimization: String interpolation avoids heavy heap allocations from legacy formatting loops
+                Main.mod.Logger.Log($"[AssistMission] Caching UI screen layout breakdown for: {mission.friendlyName}");
             }
 
+            // FIX: Always preserve 'councilor' (the primary actor) as the key anchor!
+            // This forces the cache string schema to align precisely with the UI panel lookup parameters,
+            // restoring legitimate difficulty value strings in the mission overview pane.
             MissionCalculationCache.CacheDefendingModifiers(mission, councilor, target, __result);
         }
     }
 }
+
