@@ -62,7 +62,7 @@ namespace Assistance
             if (Main.settings.statCapEnabled)
             {
                 GUILayout.Space(4f);
-                Main.settings.statCapLimit = Main.DrawNamedInt("Stat Cap Limit", Main.settings.statCapLimit, 200f);
+                Main.settings.statCapLimit = Main.DrawNamedInt("Bonus cap", Main.settings.statCapLimit, 200f);
                 Main.settings.statCapLimit = Mathf.Max(0, Main.settings.statCapLimit);
             }
         }
