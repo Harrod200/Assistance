@@ -19,32 +19,31 @@ namespace Assistance
             new Dictionary<TICouncilorState, int>();
 
         /// <summary>
-        /// Helper method: Determines if a councilor is player-controlled.
-        /// Returns false for null, AI factions, or non-player controllers.
-        /// </summary>
-        public static bool IsPlayerControlled(TICouncilorState councilor)
-        {
-            return councilor != null && 
-                   councilor.faction != null && 
-                   councilor.faction.player != null && 
-                   !councilor.faction.player.isAI;
-        }
-
-        /// <summary>
         /// Records an assist bonus for a councilor (tracked but not yet applied to attributes).
         /// Bonuses will be applied when the councilor faces contested missions.
-        /// GUARD CLAUSE: Silent exit for null or AI-controlled councilors to prevent log spam.
         /// </summary>
         public static void RecordBonus(TICouncilorState councilor, CouncilorAttribute stat, int amount)
         {
-            // Structural Guard Clause: Stop non-player entries immediately
-            if (councilor == null || !IsPlayerControlled(councilor))
+            if (Main.mod != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] RecordBonus called - Councilor: {0}, Stat: {1}, Amount: {2}", 
+                    councilor != null ? councilor.displayName : "NULL", stat, amount));
+
+            if (councilor == null || amount <= 0)
             {
-                return; // Silent exit - no log buffer allocations
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] RecordBonus rejected - councilor null: {0}, amount <= 0: {1}", 
+                        councilor == null, amount <= 0));
+                return;
             }
 
+            // Enforce the configurable cap: advisee base stat + total bonus for
+            // this stat must never exceed Main.settings.maxBonusStatValue.
+            amount = Main.settings.ApplyCap(councilor, stat, amount);
             if (amount <= 0)
             {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Bonus capped for '{0}' ({1}) - no room under the limit",
+                        councilor.displayName, stat.ToString()));
                 return;
             }
 
@@ -67,7 +66,6 @@ namespace Assistance
             }
             totalBonusAmounts[councilor] += amount;
 
-            // Safe Isolated Execution: Only runs for player-controlled councilors
             if (Main.mod != null && Main.settings.debugLogging)
             {
                 Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Recorded bonus for '{0}': {1} +{2}, Total={3}", 
@@ -77,53 +75,43 @@ namespace Assistance
 
         /// <summary>
         /// Gets the assist bonus for a specific stat (used during contested mission checks).
-        /// GUARD CLAUSE: Returns 0 silently for null or AI-controlled councilors.
         /// </summary>
         public static int GetStatBonus(TICouncilorState councilor, CouncilorAttribute stat)
         {
-            // Structural Guard Clause: Terminate non-player lookups instantly
-            if (councilor == null || !IsPlayerControlled(councilor))
-            {
-                return 0; // Silent exit
-            }
+            if (councilor == null || !trackedBonuses.ContainsKey(councilor))
+                return 0;
 
-            // Optimization: Single-pass retrieval prevents double-lookup overhead
-            if (trackedBonuses.TryGetValue(councilor, out var statDict) && 
-                statDict.TryGetValue(stat, out int bonus))
-            {
-                if (Main.mod != null && Main.settings.debugLogging)
-                {
-                    Main.mod.Logger.Log($"[AssistBonusTracker] GetStatBonus: '{councilor.displayName}' {stat} = {bonus}");
-                }
-                return bonus;
-            }
+            if (!trackedBonuses[councilor].ContainsKey(stat))
+                return 0;
 
-            return 0;
+            return trackedBonuses[councilor][stat];
         }
 
         /// <summary>
         /// Gets the total bonus pool for a councilor (sum of all stat bonuses).
         /// Used by contested mission patches to apply bonuses during checks.
-        /// GUARD CLAUSE: Returns 0 silently for null or AI-controlled councilors.
         /// </summary>
         public static int GetTotalBonus(TICouncilorState councilor)
         {
-            // Structural Guard Clause: Terminate non-player lookups instantly
-            if (councilor == null || !IsPlayerControlled(councilor))
-            {
-                return 0; // Silent exit
-            }
-
-            // Optimization: Use TryGetValue to completely prevent dictionary traversal duplication
-            if (totalBonusAmounts.TryGetValue(councilor, out int bonus))
+            if (councilor == null)
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                {
-                    Main.mod.Logger.Log($"[AssistBonusTracker] GetTotalBonus for '{councilor.displayName}': {bonus} points");
-                }
-                return bonus;
+                    Main.mod.Logger.Log("[AssistBonusTracker] GetTotalBonus called with NULL councilor!");
+                return 0;
             }
-            return 0;
+
+            if (!totalBonusAmounts.ContainsKey(councilor))
+            {
+                if (Main.mod != null && Main.settings.debugLogging)
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetTotalBonus: No bonuses tracked for '{0}'", councilor.displayName));
+                return 0;
+            }
+
+            int bonus = totalBonusAmounts[councilor];
+            if (Main.mod != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log(string.Format("[AssistBonusTracker] GetTotalBonus for '{0}': {1} points", councilor.displayName, bonus));
+
+            return bonus;
         }
 
         /// <summary>
@@ -140,11 +128,8 @@ namespace Assistance
                 if (Main.mod != null && Main.settings.debugLogging)
                 {
                     int totalBonus = GetTotalBonus(councilor);
-                    if (totalBonus > 0)
-                    {
-                        Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Clearing {0} total bonus points for '{1}'", 
-                            totalBonus, councilor.displayName));
-                    }
+                    Main.mod.Logger.Log(string.Format("[AssistBonusTracker] Clearing {0} total bonus points for '{1}'", 
+                        totalBonus, councilor.displayName));
                 }
 
                 trackedBonuses.Remove(councilor);

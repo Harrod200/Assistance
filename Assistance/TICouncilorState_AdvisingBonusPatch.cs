@@ -1,6 +1,5 @@
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
-using UnityEngine;
 
 namespace Assistance
 {
@@ -43,15 +42,7 @@ namespace Assistance
                 // Same effective-value shape as the rest of the mod: the councilor's raw stat, boosted
                 // by any accumulated Assist bonus, scaled by the configured assist percentage.
                 int rawAttribute = __instance.GetAttribute(attribute, true, true, true, false, false, false);
-                int totalStat = rawAttribute + assistBonus;
-
-                // Apply stat cap if enabled, but ensure the natural stat is never reduced
-                if (Main.settings.statCapEnabled)
-                {
-                    totalStat = Mathf.Max(rawAttribute, Mathf.Min(totalStat, Main.settings.statCapLimit));
-                }
-
-                additional += totalStat * assistPercentage / 100f;
+                additional += (rawAttribute + assistBonus) * assistPercentage;
             }
 
             if (assistBonus > 0)

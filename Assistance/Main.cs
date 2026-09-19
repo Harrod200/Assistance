@@ -24,10 +24,10 @@ namespace Assistance
             {
                 Harmony harmony = new Harmony(modEntry.Info.Id);
                 harmony.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
-                modEntry.Logger.Log("Councilor Assist Mission patches applied.");
-
-                // Initialize event listeners for mission granting
-                CouncilCompositionChanged_AssistMissionPatch.Initialize();
+                modEntry.Logger.Log("Councilor Assist Mission patches applied. " +
+                    "(AssistTemplateRegistration is included in PatchAll: its " +
+                    "TemplateManager.Initialize postfix registers the mission template " +
+                    "after all vanilla and mod templates load.)");
 
                 return true;
             }
@@ -54,17 +54,21 @@ namespace Assistance
             Main.settings.enableAssistMission = GUILayout.Toggle(Main.settings.enableAssistMission, "Enable Assist Mission for councilors", new GUILayoutOption[0]);
 
             GUILayout.Space(8f);
+            Main.settings.capBonusEnabled = GUILayout.Toggle(Main.settings.capBonusEnabled, "Cap assist stat bonus (base stat + bonus must stay under the limit)", new GUILayoutOption[0]);
+            if (Main.settings.capBonusEnabled)
+            {
+                GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+                GUILayout.Label("Max stat value (base + bonus ceiling):", new GUILayoutOption[] { GUILayout.Width(280f) });
+                string text = GUILayout.TextField(Main.settings.maxBonusStatValue.ToString(), new GUILayoutOption[] { GUILayout.Width(90f) });
+                int parsed;
+                if (int.TryParse(text, out parsed))
+                    Main.settings.maxBonusStatValue = Mathf.Max(1, parsed);
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(8f);
             Main.settings.debugLogging = GUILayout.Toggle(Main.settings.debugLogging, "Enable Debug Logging", new GUILayoutOption[0]);
 
-            GUILayout.Space(12f);
-            Main.settings.statCapEnabled = GUILayout.Toggle(Main.settings.statCapEnabled, "Enable Stat Cap (Base Stats + Assist Bonus)", new GUILayoutOption[0]);
-
-            if (Main.settings.statCapEnabled)
-            {
-                GUILayout.Space(4f);
-                Main.settings.statCapLimit = Main.DrawNamedInt("Bonus cap", Main.settings.statCapLimit, 200f);
-                Main.settings.statCapLimit = Mathf.Max(0, Main.settings.statCapLimit);
-            }
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry modEntry)

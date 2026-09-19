@@ -12,6 +12,8 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <LangVersion>latest</LangVersion>
+    <FrameworkPathOverride>$(MSBuildThisFileDirectory)..\RefAsm\.NETFramework\v4.8\</FrameworkPathOverride>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -29,7 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PostBuildEvent>if not exist "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission" mkdir "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission"; copy /Y "$(TargetPath)" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\$(TargetFileName)"</PostBuildEvent>
+    <!-- <PostBuildEvent>if not exist "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission" mkdir "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission"; copy /Y "$(TargetPath)" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\$(TargetFileName)"</PostBuildEvent> -->
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -41,60 +43,51 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="0Harmony">
-      <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityModManager\0Harmony.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\..\..\..\..\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityEngine.UI.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityModManager">
-      <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityModManager\UnityModManager.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>/scratch/u10000/refs/0Harmony22.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>C:\Games\Steam\steamapps\common\Terra Invicta\TerraInvicta_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>/tmp/umod/UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>/tmp/umod/UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>/scratch/u10000/orig/Assistance/Assistance/bin/Debug/UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityModManager">
+      <HintPath>/scratch/u10000/refs/UnityModManager.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>/rool-drive/CreepingBorders/CreepingBorders-master/Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssistTemplateRegistration.cs" />
+    <Compile Include="AssistAvailabilityPatch.cs" />
     <Compile Include="AssistBonusTracker.cs" />
-    <Compile Include="AssistMissionBootstrapPatch.cs" />
-    <Compile Include="CouncilCompositionChanged_AssistMissionPatch.cs" />
-    <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
-    <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
-    <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
-    <Compile Include="FinalizeCouncilorMissions_AssistPriorityPatch.cs" />
-    <Compile Include="Main.cs" />
-    <Compile Include="MissionCalculationCache.cs" />
-    <Compile Include="Settings.cs" />
     <Compile Include="TICouncilorState_AdvisingBonusPatch.cs" />
-    <Compile Include="TICouncilorState_GetPossibleMissionListPatch.cs" />
-    <Compile Include="TIMissionCondition_MyFactionCouncilor.cs" />
+    <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
+    <Compile Include="TIMissionPhaseState_StartofTurnBookkeepingPatch.cs" />
+    <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
+    <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="MissionOrderPatch.cs" />
+    <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />
+    <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
+    <Compile Include="CouncilorMissionButtonController_AssistIconColorPatch.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="TIMissionCondition_NotCurrentlyAssisting.cs" />
     <Compile Include="TIMissionCondition_PlayerFactionOnly.cs" />
     <Compile Include="TIMissionEffect_Assist.cs" />
-    <Compile Include="TIMissionModifier_AssistFlat.cs" />
-    <Compile Include="TIMissionModifier_AssistStat.cs" />
-    <Compile Include="TIMissionPhaseState_StartofTurnBookkeepingPatch.cs" />
-    <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
-    <Compile Include="TIMissionResolution_Contested_ModifierCachePatch.cs" />
-    <Compile Include="TIMissionResolution_UIBreakdown_InjectionPatch.cs" />
     <Compile Include="TIMissionTemplate_Assist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TIMissionTemplate.en" />
