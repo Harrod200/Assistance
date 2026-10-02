@@ -67,14 +67,12 @@
     <Compile Include="AssistBonusTracker.cs" />
     <Compile Include="TICouncilorState_AdvisingBonusPatch.cs" />
     <Compile Include="TICouncilorState_GetCurrentMissionIconPatch.cs" />
-    <Compile Include="TIGameState_LoadPatch.cs" />
     <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
     <Compile Include="TIMissionPhaseState_StartofTurnBookkeepingPatch.cs" />
     <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
     <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MissionOrderPatch.cs" />
-    <Compile Include="TIMissionState_PostGlobalGameStateCreateInit_2_Patch.cs" />
     <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />
     <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
     <Compile Include="CouncilorMissionButtonController_AssistIconColorPatch.cs" />

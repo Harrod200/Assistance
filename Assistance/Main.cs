@@ -69,6 +69,8 @@ namespace Assistance
             GUILayout.Space(8f);
             Main.settings.debugLogging = GUILayout.Toggle(Main.settings.debugLogging, "Enable Debug Logging", new GUILayoutOption[0]);
 
+            ModCleanupButton.DrawGUI(modEntry);
+
         }
 
         private static void OnSaveGUI(UnityModManager.ModEntry modEntry)
