@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
 using FullSerializer;
 using HarmonyLib;
@@ -46,17 +47,77 @@ namespace Assistance
         private static string _status;
         private static bool _statusIsError;
 
+        // Dropdown state: selected save file, cached listing, popup open flag.
+        private static List<FileInfo> _saves;
+        private static int _selected = -1;
+        private static bool _dropdownOpen;
+        private static Vector2 _dropdownScroll;
+
         private static readonly FieldInfo GamestatesField = typeof(GameStateManager).GetField(
             "gamestates", BindingFlags.NonPublic | BindingFlags.Static);
+
+        private static void RefreshSaveList()
+        {
+            try
+            {
+                string dir = CreateSaveFileScrollList.GetSaveFolderPath();
+                var files = new DirectoryInfo(dir).GetFiles();
+                // Same filter the game uses (TIUtilities.GetMostRecentSave):
+                // keep only the active save extension(s), newest first.
+                string ext = TIUtilities.GetSaveFileExtension();
+                _saves = new List<FileInfo>(files.Where(f => ext.Contains(f.Extension)));
+                _saves.Sort((a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
+            }
+            catch (Exception e)
+            {
+                _saves = null;
+                UnityEngine.Debug.LogError("[Assistance] Failed to enumerate savegames: " + e.Message);
+            }
+            if (_saves != null && _selected >= _saves.Count) _selected = _saves.Count - 1;
+            if (_saves != null && _selected < 0 && _saves.Count > 0) _selected = 0;
+        }
 
         public static void DrawGUI(UnityModManager.ModEntry modEntry)
         {
             GUILayout.Space(12f);
             GUILayout.Label("Mod removal:", new GUILayoutOption[0]);
 
-            if (GUILayout.Button("Remove mod data from the 'Continue' savegame", new GUILayoutOption[0]))
+            RefreshSaveList();
+            if (_saves == null || _saves.Count == 0)
             {
-                _status = CleanContinueSave(modEntry);
+                GUILayout.Label("No savegames found.", new GUILayoutOption[0]);
+                return;
+            }
+
+            // Dropdown (IMGUI approximation): header button toggles a scrollable list.
+            var sel = _saves[Mathf.Clamp(_selected, 0, _saves.Count - 1)];
+            string header = string.Format("Savegame: {0}  ({1:yyyy-MM-dd HH:mm}) {2}",
+                Path.GetFileNameWithoutExtension(sel.Name), sel.LastWriteTime, _dropdownOpen ? "▲" : "▼");
+            if (GUILayout.Button(header, new GUILayoutOption[0]))
+                _dropdownOpen = !_dropdownOpen;
+
+            if (_dropdownOpen)
+            {
+                _dropdownScroll = GUILayout.BeginScrollView(_dropdownScroll, GUI.skin.box, GUILayout.Height(Mathf.Min(160f, 22f * _saves.Count + 8f)));
+                for (int i = 0; i < _saves.Count; i++)
+                {
+                    var f = _saves[i];
+                    string label = string.Format("{0}{1}  {2:yyyy-MM-dd HH:mm}  ({3:0.0} KB)",
+                        i == _selected ? "● " : "   ", Path.GetFileNameWithoutExtension(f.Name), f.LastWriteTime, f.Length / 1024f);
+                    var btnStyle = new GUIStyle(GUI.skin.button);
+                    if (GUILayout.Button(label, btnStyle, new GUILayoutOption[0]))
+                    {
+                        _selected = i;
+                        _dropdownOpen = false;
+                        _status = null;
+                    }
+                }
+                GUILayout.EndScrollView();
+            }
+
+            if (GUILayout.Button("Remove mod data from the selected savegame", new GUILayoutOption[0]))
+            {
+                _status = CleanSaveFile(sel.FullName, modEntry);
                 _statusIsError = _status != null && _status.StartsWith("!");
             }
 
@@ -70,15 +131,19 @@ namespace Assistance
         }
 
         /// <summary>
-        /// Cleans the save file the main menu Continue button points at:
-        /// removes assist missions and all references to them, then rewrites
-        /// the file (a .bak backup is kept alongside). Returns a readable result.
+        /// Cleans the given save file: removes assist missions and all references
+        /// to them, then rewrites the file (a .bak backup is kept alongside).
+        /// Returns a readable result.
         /// </summary>
         public static string CleanContinueSave(UnityModManager.ModEntry modEntry)
         {
+            return CleanSaveFile(StartMenuController.continueSaveFilepath, modEntry);
+        }
+
+        public static string CleanSaveFile(string path, UnityModManager.ModEntry modEntry)
+        {
             try
             {
-                string path = StartMenuController.continueSaveFilepath;
                 if (string.IsNullOrEmpty(path) || !File.Exists(path))
                     return "!No savegame found for the Continue button. Load and save a campaign first.";
 
