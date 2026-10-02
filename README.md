@@ -84,7 +84,20 @@ Edit `config.json` in the mod folder to customize:
 
 ## Version History
 
-### v0.7.3 (Current)
+### v0.8.2 (Current)
+- **Fixed Double-Counting Bug in Advising**: Assist bonus was being applied twice to nation/hab bonuses (2x inflated)
+- **Simplified Advising Patch Logic**: Now applies assist bonus exactly once, scaled by efficiency (assistPercentage)
+- **Better Logging**: Improved debug output for advising bonus calculations
+
+### v0.8.1
+- Configurable stat bonus cap feature
+- Restored mission breakdown UI patches
+
+### v0.8.0
+- Changed default assist ratio to 100%
+- Added stat cap feature (default 25)
+
+### v0.7.3
 - **Mission Modifier Caching System**: Improved UI accuracy
 - **Fixed Crackdown Display**: Zero-valued modifiers now show correctly
 - **Eliminated Reward Bonus Leakage**: Post-mission rewards no longer appear in breakdown text

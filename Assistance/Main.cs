@@ -16,9 +16,9 @@ namespace Assistance
         {
             Main.mod = modEntry;
             Main.settings = UnityModManager.ModSettings.Load<Settings>(modEntry);
-            modEntry.OnToggle = new System.Func<UnityModManager.ModEntry, bool, bool>(Main.OnToggle);
-            modEntry.OnGUI = new System.Action<UnityModManager.ModEntry>(Main.OnGUI);
-            modEntry.OnSaveGUI = new System.Action<UnityModManager.ModEntry>(Main.OnSaveGUI);
+            modEntry.OnToggle = Main.OnToggle;
+            modEntry.OnGUI = Main.OnGUI;
+            modEntry.OnSaveGUI = Main.OnSaveGUI;
 
             try
             {

@@ -34,6 +34,12 @@
     <!-- <PostBuildEvent>if not exist "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission" mkdir "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission"; copy /Y "$(TargetPath)" "C:\Games\Steam\steamapps\common\Terra Invicta\Mods\Enabled\AssistMission\$(TargetFileName)"</PostBuildEvent> -->
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>..\ref-dlls\UMM\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\ref-dlls\TerraInvicta\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -42,31 +48,18 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="0Harmony">
-      <HintPath>/scratch/u10000/refs/0Harmony22.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>/tmp/umod/UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\ref-dlls\TerraInvicta\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>/tmp/umod/UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\ref-dlls\TerraInvicta\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>/scratch/u10000/orig/Assistance/Assistance/bin/Debug/UnityEngine.UI.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\ref-dlls\TerraInvicta\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityModManager">
-      <HintPath>/scratch/u10000/refs/UnityModManager.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\ref-dlls\UMM\UnityModManager.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>/rool-drive/CreepingBorders/CreepingBorders-master/Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssistTemplateRegistration.cs" />
@@ -90,6 +83,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Handover\Fix Summary - Double Counting Bug.md" />
+    <None Include="Handover\Handover v1.md" />
+    <None Include="Handover\Handover v2.md" />
+    <None Include="Handover\Reference Guide.md" />
     <None Include="TIMissionTemplate.en" />
   </ItemGroup>
   <ItemGroup>
