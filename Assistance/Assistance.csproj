@@ -72,6 +72,7 @@
     <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
     <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
     <Compile Include="Main.cs" />
+    <Compile Include="ModCleanupButton.cs" />
     <Compile Include="MissionOrderPatch.cs" />
     <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />
     <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />

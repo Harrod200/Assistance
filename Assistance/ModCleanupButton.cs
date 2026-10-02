@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Reflection;
+using FullSerializer;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
 using UnityEngine;
@@ -10,25 +13,33 @@ namespace Assistance
 {
     /// <summary>
     /// UMM settings-panel button that cleanly removes the mod's data from the
-    /// latest savegame, so the mod can be uninstalled without corrupting the save.
+    /// savegame referenced by the main menu's Continue button, so the mod can be
+    /// uninstalled without corrupting that save. Works straight from the main
+    /// menu - no campaign load required.
     ///
     /// Design (verified against the decompiled game code):
-    /// - A save serializes GameStateManager.gamestates only (SaveStructure.Load /
-    ///   GameStateManager.LoadAllGameStates). Templates live in TemplateManager's
-    ///   in-memory registry, re-initialized from game data on every session start,
-    ///   so templates never persist in a save and need no cleanup.
-    /// - The only gamestates the mod creates are assist TIMissionStates (via
-    ///   AssistAvailabilityPatch / TIMissionTemplate_Assist effects). Every assist
-    ///   mission is removed from the registry with
-    ///   GameStateManager.RemoveGameState&lt;TIMissionState&gt;(id, true).
-    /// - TICouncilorState.activeMission holds a reference to the removed mission
-    ///   state, so it is nulled too (private setter, set via Harmony Traverse) -
-    ///   the game's own null checks then behave as if the councilor had no mission.
-    /// - AssistBonusTracker (in-memory, runtime-only) is cleared.
-    /// - The cleaned session is written back over the most recent save file
-    ///   (StartMenuController.continueSaveFilepath == TIUtilities.GetMostRecentSave()).
-    /// After this, saving the session - or reloading the cleaned latest save -
-    /// yields a save the base game can load with the mod removed.
+    /// - The Continue button targets StartMenuController.continueSaveFilepath
+    ///   (== TIUtilities.GetMostRecentSave()); LoadMenuController only enables
+    ///   the button when that file exists, and StartMenuController hands the same
+    ///   path to SolarSystemBootstrap.LoadGame.
+    /// - A save file is a SaveStructure (currentID + gamestates dictionary),
+    ///   pretty-printed JSON, gzipped when TIPlayerProfileManager.compressSaves
+    ///   is on (extension .gz, else .json). SaveStructure.Load deserializes it
+    ///   standalone; TIGameStateConverter resolves nested gamestate references
+    ///   by ID within the file, so councilor -> mission links come back intact
+    ///   even with no campaign running.
+    /// - Serialization is depth-based: top-level gamestates write fully, nested
+    ///   ones as IDs. Mutating the deserialized dictionary and re-serializing
+    ///   with StringSerializationAPI reproduces the game's own save format.
+    /// - The mod's only persistent data is assist TIMissionStates. They are
+    ///   identified by their serialized templateName ("Assist"), removed from
+    ///   the gamestates dictionary, and every TIGameState field that referenced
+    ///   one (councilor activeMission and any others) is nulled so no dangling
+    ///   ID remains in the file. Templates never persist - no cleanup needed.
+    /// - A backup of the original file is written first as *.bak, which the
+    ///   save list and GetMostRecentSave ignore (they filter by extension).
+    /// If a campaign happens to be loaded, the live session is cleaned too -
+    /// otherwise its next save would resurrect the missions into the file.
     /// </summary>
     public static class ModCleanupButton
     {
@@ -43,22 +54,10 @@ namespace Assistance
             GUILayout.Space(12f);
             GUILayout.Label("Mod removal:", new GUILayoutOption[0]);
 
-            bool sessionLoaded = GameStateManager.HasGamestates;
-            if (sessionLoaded)
+            if (GUILayout.Button("Remove mod data from the 'Continue' savegame", new GUILayoutOption[0]))
             {
-                if (GUILayout.Button("Remove mod data from latest save", new GUILayoutOption[0]))
-                {
-                    _status = CleanSessionAndSave(modEntry);
-                    _statusIsError = false;
-                }
-            }
-            else
-            {
-                if (GUILayout.Button("Remove mod data from latest save", new GUILayoutOption[0]))
-                {
-                    _status = "No campaign is loaded. Load the save you want to clean, then click the button again.";
-                    _statusIsError = true;
-                }
+                _status = CleanContinueSave(modEntry);
+                _statusIsError = _status != null && _status.StartsWith("!");
             }
 
             if (!string.IsNullOrEmpty(_status))
@@ -71,74 +70,154 @@ namespace Assistance
         }
 
         /// <summary>
-        /// Removes all assist-mission gamestates from the loaded session, detaches
-        /// councilors from them, clears the bonus tracker, and overwrites the most
-        /// recent save file with the cleaned state. Returns a human-readable result.
+        /// Cleans the save file the main menu Continue button points at:
+        /// removes assist missions and all references to them, then rewrites
+        /// the file (a .bak backup is kept alongside). Returns a readable result.
         /// </summary>
-        public static string CleanSessionAndSave(UnityModManager.ModEntry modEntry)
+        public static string CleanContinueSave(UnityModManager.ModEntry modEntry)
         {
             try
             {
+                string path = StartMenuController.continueSaveFilepath;
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                    return "!No savegame found for the Continue button. Load and save a campaign first.";
+
+                string backup = path + ".pre-assist-clean.bak";
+                File.Copy(path, backup, true);
+
+                SaveStructure save = SaveStructure.Load(path);
+                if (save == null || save.gamestates == null)
+                    return "!Could not parse '{0}' - see the player log.".Replace("{0}", Path.GetFileName(path));
+
+                var removed = new HashSet<GameStateID>();
+                Dictionary<GameStateID, TIGameState> missionDict;
+                if (!save.gamestates.TryGetValue(typeof(TIMissionState), out missionDict) || missionDict == null)
+                    return "No assist missions were active; mod data was clean. ('{0}' left unchanged.)"
+                        .Replace("{0}", Path.GetFileName(path));
+
+                foreach (var pair in missionDict)
+                {
+                    var mission = pair.Value as TIMissionState;
+                    if (mission != null && mission.templateName == "Assist")
+                        removed.Add(mission.ID);
+                }
+
+                if (removed.Count == 0)
+                {
+                    return "No assist missions were active; mod data was clean. ('{0}' left unchanged.)"
+                        .Replace("{0}", Path.GetFileName(path));
+                }
+
+                // Null every TIMissionState-typed field that references a removed
+                // mission - activeMission (private-set auto property) and any
+                // others, across all gamestate types.
+                int cleared = ClearRemovedMissionReferences(save.gamestates, removed);
+
+                // Drop the mission states themselves from the save.
+                foreach (GameStateID id in removed)
+                    missionDict.Remove(id);
+
+                if (!WriteSave(path, save))
+                    return "!Cleaned {0} assist mission(s) and cleared {1} reference(s), but writing the file failed - " +
+                        "the original is intact at '{2}'. See the player log."
+                        .Replace("{0}", removed.Count.ToString()).Replace("{1}", cleared.ToString())
+                        .Replace("{2}", Path.GetFileName(backup));
+
+                // If a session is live, clean it too so its next save can't
+                // resurrect the removed missions into the file.
+                int liveMissions = 0;
                 var gamestates = (Dictionary<Type, Dictionary<GameStateID, TIGameState>>)GamestatesField.GetValue(null);
-                if (gamestates == null)
-                    return "Could not read the gamestate registry - aborting.";
-
-                // Snapshot first: RemoveGameState mutates the dictionaries while we walk them.
-                var assistMissions = new List<TIMissionState>();
-                foreach (var pair in gamestates)
+                if (gamestates != null && GameStateManager.HasGamestates)
                 {
-                    if (!typeof(TIMissionState).IsAssignableFrom(pair.Key))
-                        continue;
-                    foreach (var state in pair.Value.Values)
-                    {
-                        if (state != null && state is TIMissionState mission && mission.templateName == "Assist")
-                            assistMissions.Add(mission);
-                    }
+                    var liveDict = gamestates[typeof(TIMissionState)];
+                    if (liveDict != null)
+                        foreach (GameStateID id in removed)
+                            if (liveDict.Remove(id))
+                                liveMissions++;
+                    ClearRemovedMissionReferences(gamestates, removed);
+                    AssistBonusTracker.ClearAll();
                 }
 
-                int missions = 0;
-                int councilors = 0;
-                foreach (var mission in assistMissions)
-                {
-                    // Detach the assigned councilor first, so no live reference to the
-                    // removed mission remains in any serialized gamestate.
-                    var councilor = mission.councilor;
-                    if (councilor != null && councilor.activeMission == mission)
-                    {
-                        Traverse.Create(councilor).Field("activeMission").SetValue(null);
-                        councilors++;
-                    }
-                    GameStateManager.RemoveGameState<TIMissionState>(mission.ID, true);
-                    missions++;
-                }
+                modEntry.Logger.Log(string.Format(
+                    "[ModCleanup] Cleaned '{0}': removed {1} assist mission(s), cleared {2} reference(s){3}. Backup: '{4}'.",
+                    path, removed.Count, cleared, liveMissions > 0 ? " (+ " + liveMissions + " in the live session)" : "", backup));
 
-                AssistBonusTracker.ClearAll();
-
-                // Overwrite the most recent savegame with the cleaned session.
-                string latestSave = TIUtilities.GetMostRecentSave();
-                if (string.IsNullOrEmpty(latestSave))
-                    return string.Format("Cleaned {0} assist mission(s) and detached {1} councilor(s), " +
-                        "but no save file could be located - use the in-game save screen.", missions, councilors);
-
-                if (!GameStateManager.SaveAllGameStates(latestSave, true))
-                    return string.Format("Cleaned {0} assist mission(s) and detached {1} councilor(s), " +
-                        "but writing '{2}' failed - see the player log.", missions, councilors, latestSave);
-
-                if (Main.settings.debugLogging)
-                    modEntry.Logger.Log(string.Format(
-                        "[ModCleanup] Removed {0} assist mission(s), detached {1} councilor(s), saved to '{2}'.",
-                        missions, councilors, latestSave));
-
-                return missions == 0
-                    ? string.Format("No assist missions were active; mod data was clean. Overwrote '{0}'.", latestSave)
-                    : string.Format("Removed {0} assist mission(s), detached {1} councilor(s), and overwrote '{2}'. " +
-                        "The save now loads cleanly without the mod. (Re-enabled? Just load a different save and reload.)",
-                        missions, councilors, latestSave);
+                return string.Format("Removed {0} assist mission(s) and cleared {1} reference(s) from '{2}' " +
+                    "(live session too: {3}). Backup kept at '{4}'. The save now loads cleanly without the mod.",
+                    removed.Count, cleared, Path.GetFileName(path),
+                    liveMissions > 0 ? "yes, " + liveMissions + " mission(s)" : "not loaded",
+                    Path.GetFileName(backup));
             }
             catch (Exception ex)
             {
                 modEntry.Logger.Error("[ModCleanup] " + ex);
-                return "Cleanup failed: " + ex.Message + " - see the player log.";
+                return "!Cleanup failed: " + ex.Message + " - see the player log.";
+            }
+        }
+
+        /// <summary>Nulls every instance field of type TIMissionState whose value
+        /// is one of the removed missions, on every gamestate in the registry.
+        /// Covers private-set auto-properties via their backing fields.</summary>
+        private static int ClearRemovedMissionReferences(
+            Dictionary<Type, Dictionary<GameStateID, TIGameState>> gamestates, HashSet<GameStateID> removed)
+        {
+            int cleared = 0;
+            var missionFields = new Dictionary<Type, List<FieldInfo>>();
+            foreach (var dict in gamestates.Values)
+            {
+                if (dict == null) continue;
+                foreach (TIGameState state in dict.Values)
+                {
+                    if (state == null || state is TIMissionState) continue;
+                    List<FieldInfo> fields;
+                    var type = state.GetType();
+                    if (!missionFields.TryGetValue(type, out fields))
+                    {
+                        fields = new List<FieldInfo>();
+                        for (var t = type; t != null && t != typeof(object); t = t.BaseType)
+                            foreach (FieldInfo f in t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                                if (typeof(TIMissionState).IsAssignableFrom(f.FieldType))
+                                    fields.Add(f);
+                        missionFields[type] = fields;
+                    }
+                    foreach (FieldInfo f in fields)
+                    {
+                        var mission = f.GetValue(state) as TIMissionState;
+                        if (mission != null && removed.Contains(mission.ID))
+                        {
+                            f.SetValue(state, null);
+                            cleared++;
+                        }
+                    }
+                }
+            }
+            return cleared;
+        }
+
+        /// <summary>Serializes the SaveStructure back to disk in the same format
+        /// the game writes: pretty JSON, gzipped iff the file path ends in .gz.</summary>
+        private static bool WriteSave(string path, SaveStructure save)
+        {
+            string json = fsJsonPrinter.PrettyJson(StringSerializationAPI.Serialize(typeof(SaveStructure), save));
+            try
+            {
+                if (path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+                {
+                    using (var file = File.Create(path))
+                    using (var gzip = new GZipStream(file, CompressionMode.Compress))
+                    using (var writer = new StreamWriter(gzip))
+                        writer.Write(json);
+                }
+                else
+                {
+                    File.WriteAllText(path, json);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("[ModCleanup] write failed: " + ex);
+                return false;
             }
         }
     }
