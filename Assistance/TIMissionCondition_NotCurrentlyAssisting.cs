@@ -6,6 +6,8 @@ namespace Assistance
     /// Condition that prevents targeting a councilor who is currently performing an Assist mission.
     /// This ensures councillors actively assisting others cannot be assisted themselves until
     /// their current assist mission completes.
+    /// 
+    /// Safely handles stale councilor references from previous game sessions.
     /// </summary>
     public class TIMissionCondition_NotCurrentlyAssisting : TIMissionCondition
     {
@@ -19,12 +21,16 @@ namespace Assistance
             if (targetCouncilor == null)
                 return TIMissionCondition.fail;
 
-            // Check if target is currently performing an Assist mission
-            if (targetCouncilor.activeMission != null && 
-                targetCouncilor.activeMission.missionTemplate != null &&
-                targetCouncilor.activeMission.missionTemplate.dataName == "Assist")
+            // Check if target is currently performing an Assist mission.
+            // Safely handle cases where activeMission might be null (can happen during 
+            // save/load transitions or with stale councilor references).
+            if (targetCouncilor.activeMission != null)
             {
-                return TIMissionCondition.fail;
+                var missionTemplate = targetCouncilor.activeMission.missionTemplate;
+                if (missionTemplate != null && missionTemplate.dataName == "Assist")
+                {
+                    return TIMissionCondition.fail;
+                }
             }
 
             // Target is not currently assisting, so they can be targeted

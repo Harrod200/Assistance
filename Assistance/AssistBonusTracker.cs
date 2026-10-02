@@ -74,11 +74,30 @@ namespace Assistance
         }
 
         /// <summary>
+        /// Validates that a councilor reference is still alive and from the current game session.
+        /// Stale references from previous sessions should be skipped.
+        /// </summary>
+        private static bool IsValidCouncilor(TICouncilorState councilor)
+        {
+            // Basic null check
+            if (councilor == null)
+                return false;
+
+            // Verify the councilor has a valid faction reference (indicates they're part of current game state)
+            // Stale councilors from previous sessions will have null or invalid faction references
+            if (councilor.faction == null)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Gets the assist bonus for a specific stat (used during contested mission checks).
+        /// Safely handles stale councilor references by validating before access.
         /// </summary>
         public static int GetStatBonus(TICouncilorState councilor, CouncilorAttribute stat)
         {
-            if (councilor == null || !trackedBonuses.ContainsKey(councilor))
+            if (!IsValidCouncilor(councilor) || !trackedBonuses.ContainsKey(councilor))
                 return 0;
 
             if (!trackedBonuses[councilor].ContainsKey(stat))
@@ -90,13 +109,14 @@ namespace Assistance
         /// <summary>
         /// Gets the total bonus pool for a councilor (sum of all stat bonuses).
         /// Used by contested mission patches to apply bonuses during checks.
+        /// Safely handles stale councilor references by validating before access.
         /// </summary>
         public static int GetTotalBonus(TICouncilorState councilor)
         {
-            if (councilor == null)
+            if (!IsValidCouncilor(councilor))
             {
                 if (Main.mod != null && Main.settings.debugLogging)
-                    Main.mod.Logger.Log("[AssistBonusTracker] GetTotalBonus called with NULL councilor!");
+                    Main.mod.Logger.Log("[AssistBonusTracker] GetTotalBonus called with invalid councilor (null or from stale session)!");
                 return 0;
             }
 

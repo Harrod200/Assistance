@@ -66,12 +66,15 @@
     <Compile Include="AssistAvailabilityPatch.cs" />
     <Compile Include="AssistBonusTracker.cs" />
     <Compile Include="TICouncilorState_AdvisingBonusPatch.cs" />
+    <Compile Include="TICouncilorState_GetCurrentMissionIconPatch.cs" />
+    <Compile Include="TIGameState_LoadPatch.cs" />
     <Compile Include="TIMissionResolution_Contested_AssistBonusPatch.cs" />
     <Compile Include="TIMissionPhaseState_StartofTurnBookkeepingPatch.cs" />
     <Compile Include="CouncilGridController_SetStatValuePatch.cs" />
     <Compile Include="CouncilorView_GetAttributeStringPatch.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MissionOrderPatch.cs" />
+    <Compile Include="TIMissionState_PostGlobalGameStateCreateInit_2_Patch.cs" />
     <Compile Include="TINotificationQueueState_MissionDetailBreakdownPatch.cs" />
     <Compile Include="CouncilorMissionCanvasController_UpdateModifierListPatch.cs" />
     <Compile Include="CouncilorMissionButtonController_AssistIconColorPatch.cs" />
@@ -83,11 +86,20 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Handover\Architecture - Template Resolution.md" />
+    <None Include="Handover\Early Injection - Template Resolution Solution.md" />
+    <None Include="Handover\Early Injection Solution - Summary.md" />
     <None Include="Handover\Fix Summary - Double Counting Bug.md" />
+    <None Include="Handover\Fix Summary - Save Persistence Improvement.md" />
     <None Include="Handover\Handover v1.md" />
     <None Include="Handover\Handover v2.md" />
+    <None Include="Handover\Handover v3.md" />
+    <None Include="Handover\NullReferenceException Fix Summary.md" />
     <None Include="Handover\Reference Guide.md" />
+    <None Include="Handover\Root Cause Analysis - Mission Template Null.md" />
+    <None Include="Handover\Why Earlier Fix Didn%27t Work.md" />
     <None Include="TIMissionTemplate.en" />
+    <None Include="v0.8.2 Release Notes.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assistance\" />
