@@ -27,6 +27,13 @@ namespace Assistance
     /// (Game has no per-mod unload hook; re-registering on each init cycle is
     /// the correct counterpart to ClearAllTemplates.)
     /// </summary>
+    /// No one-shot flag: TemplateManager.ClearAllTemplates() (static) runs on
+    /// EVERY SolarSystemBootstrap.LoadGame(), including loading a save right
+    /// after loading one. UMM does not unload the mod between sessions, so a
+    /// static "registered" bool would skip re-registration and leave the
+    /// registry without the Assist template (councilor UI then NREs on
+    /// GetMyTemplate().displayName). The Find() check below makes this
+    /// postfix idempotent and cheap.
     [HarmonyPatch(typeof(TemplateManager), "Initialize")]
     internal static class AssistTemplateRegistration
     {
