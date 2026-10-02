@@ -7,3 +7,5 @@ refs/
 tmp/
 dotnet/
 ref-dlls/
+.vs/
+

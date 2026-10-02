@@ -150,5 +150,17 @@ namespace Assistance
             trackedBonuses.Clear();
             totalBonusAmounts.Clear();
         }
+
+        /// <summary>
+        /// Clears all tracked bonuses when a new game is loaded.
+        /// Prevents stale councilor references from previous sessions from causing crashes.
+        /// </summary>
+        public static void Clear()
+        {
+            if (Main.mod != null && Main.settings != null && Main.settings.debugLogging)
+                Main.mod.Logger.Log("[AssistBonusTracker] Clearing all bonuses (new game session)");
+
+            ClearAll();
+        }
     }
 }
